@@ -22,6 +22,12 @@ class ProdiResource extends Resource
 
     protected static ?string $navigationLabel = 'Prodi';
 
+    protected static ?string $modelLabel = 'Prodi';
+    
+    protected static ?string $pluralModelLabel = 'Prodi';
+
+    protected static ?string $slug = 'prodi';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static ?string $recordTitleAttribute = 'nama';

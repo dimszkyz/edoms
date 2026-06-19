@@ -25,6 +25,12 @@ class EdomResource extends Resource
 
     protected static ?string $navigationLabel = 'Kelola EDOM';
 
+    protected static ?string $modelLabel = 'EDOM';
+    
+    protected static ?string $pluralModelLabel = 'EDOM';
+
+    protected static ?string $slug = 'edom';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static ?string $recordTitleAttribute = 'nama_edom';

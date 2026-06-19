@@ -41,8 +41,22 @@ class EdomForm
                     ->searchable()
                     ->preload()
                     ->live()
-                    ->afterStateUpdated(function ($state, $set) {
-                        $set('mataKuliahs', []);
+                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                        $selectedMataKuliahs = $get('mataKuliahs') ?? [];
+
+                        if (empty($state)) {
+                            $set('mataKuliahs', []);
+                            return;
+                        }
+
+                        if (!empty($selectedMataKuliahs)) {
+                            $validMataKuliahs = MataKuliah::whereIn('prodi_id', $state)
+                                ->whereIn('id', $selectedMataKuliahs)
+                                ->pluck('id')
+                                ->toArray();
+                                
+                            $set('mataKuliahs', $validMataKuliahs);
+                        }
                     })
                     ->required(),
 

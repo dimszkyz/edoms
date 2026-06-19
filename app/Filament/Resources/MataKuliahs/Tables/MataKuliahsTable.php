@@ -7,6 +7,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Filament\Tables\Grouping\Group; // Tambahkan import class Group
 
 class MataKuliahsTable
 {
@@ -38,6 +39,13 @@ class MataKuliahsTable
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),
-            ]);
+            ])
+            // Menambahkan fitur pengelompokan berdasarkan relasi Prodi
+            ->groups([
+                Group::make('prodi.nama')
+                    ->label('Program Studi')
+                    ->collapsible(), // Membuat grup bisa di-collapse (buka-tutup)
+            ])
+            ->defaultGroup('prodi.nama'); // Otomatis mengelompokkan saat halaman list dibuka
     }
 }

@@ -22,6 +22,12 @@ class MataKuliahResource extends Resource
 
     protected static ?string $navigationLabel = 'Mata Kuliah';
 
+    protected static ?string $modelLabel = 'Mata Kuliah';
+    
+    protected static ?string $pluralModelLabel = 'Mata Kuliah';
+
+    protected static ?string $slug = 'mata-kuliah';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static ?string $recordTitleAttribute = 'nama';
