@@ -1,0 +1,82 @@
+<?php
+
+namespace App\Filament\Resources\Edoms\Schemas;
+
+use App\Models\MataKuliah;
+
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+
+use Filament\Schemas\Schema;
+
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Placeholder;
+
+use Filament\Schemas\Components\Utilities\Set;
+
+class EdomForm
+{
+    public static function configure(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                TextInput::make('nama_edom')
+                    ->label('Nama EDOM')
+                    ->required()
+                    ->maxLength(255)
+                    ->disabled(fn($record) => $record && !$record->isDraft()),
+
+                DatePicker::make('tanggal_dibuat')
+                    ->label('Tanggal Dibuat')
+                    ->default(now())
+                    ->required()
+                    ->disabled(fn($record) => $record && !$record->isDraft()),
+
+                Select::make('prodis')
+                    ->label('Prodi')
+                    ->relationship('prodis', 'nama')
+                    ->multiple()
+                    ->searchable()
+                    ->preload()
+                    ->live()
+                    ->afterStateUpdated(function ($state, $set) {
+                        $set('mataKuliahs', []);
+                    })
+                    ->required(),
+
+                Select::make('mataKuliahs')
+                    ->label('Mata Kuliah')
+                    ->relationship(
+                        name: 'mataKuliahs',
+                        titleAttribute: 'nama',
+                        modifyQueryUsing: function ($query, $get) {
+
+                            $prodis = $get('prodis');
+
+                            if (blank($prodis)) {
+                                $query->whereRaw('1 = 0');
+                                return;
+                            }
+
+                            $query->whereIn('prodi_id', $prodis);
+                        }
+                    )
+                    ->multiple()
+                    ->searchable()
+                    ->preload()
+                    ->required(),
+
+                Select::make('status')
+                    ->label('Status')
+                    ->options([
+                        'draft' => 'Draft',
+                        'aktif' => 'Aktif',
+                        'ditutup' => 'Ditutup',
+                    ])
+                    ->disabled(fn($record) => $record && $record->status === 'ditutup')
+                    ->required(),
+            ]);
+    }
+}
