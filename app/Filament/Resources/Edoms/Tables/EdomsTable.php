@@ -6,6 +6,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 
 class EdomsTable
@@ -55,7 +56,28 @@ class EdomsTable
                     ->dateTime('d M Y H:i'),
             ])
             ->filters([
-                //
+                SelectFilter::make('status')
+                    ->label('Status')
+                    ->options([
+                        'draft' => 'Draft',
+                        'aktif' => 'Aktif',
+                        'ditutup' => 'Ditutup',
+                    ])
+                    ->placeholder('Semua status'),
+
+                SelectFilter::make('prodis')
+                    ->label('Prodi')
+                    ->relationship('prodis', 'nama')
+                    ->searchable()
+                    ->preload()
+                    ->placeholder('Semua prodi'),
+
+                SelectFilter::make('mataKuliahs')
+                    ->label('Mata Kuliah')
+                    ->relationship('mataKuliahs', 'nama')
+                    ->searchable()
+                    ->preload()
+                    ->placeholder('Semua mata kuliah'),
             ])
             ->recordActions([
                 EditAction::make(),
