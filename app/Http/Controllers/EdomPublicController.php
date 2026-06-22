@@ -15,20 +15,92 @@ use Illuminate\View\View;
 
 class EdomPublicController extends Controller
 {
+    public function index(Request $request): View
+    {
+        $activeEdoms = Edom::query()
+            ->with(['prodis', 'mataKuliahs'])
+            ->withCount(['categories', 'questions'])
+            ->where('status', 'aktif')
+            ->latest('tanggal_dibuat')
+            ->latest('id')
+            ->get();
+
+        $selectedEdomId = (int) $request->query('edom');
+
+        if ($selectedEdomId > 0) {
+            $selectedEdom = $activeEdoms->firstWhere('id', $selectedEdomId);
+
+            if ($selectedEdom) {
+                return $this->show($selectedEdom);
+            }
+        }
+
+        if ($activeEdoms->count() === 1) {
+            return $this->show($activeEdoms->first());
+        }
+
+        $closedEdoms = Edom::query()
+            ->with(['prodis', 'mataKuliahs'])
+            ->where('status', 'ditutup')
+            ->latest('tanggal_dibuat')
+            ->latest('id')
+            ->limit(6)
+            ->get();
+
+        $draftCount = Edom::query()
+            ->where('status', 'draft')
+            ->count();
+
+        return view('edom.index', [
+            'activeEdoms' => $activeEdoms,
+            'closedEdoms' => $closedEdoms,
+            'draftCount' => $draftCount,
+        ]);
+    }
+
     public function show(Edom $edom): View
     {
+        $edom = $this->prepareEdom($edom);
+
+        if (! $edom->isActive()) {
+            return view('edom.status', [
+                'edom' => $edom,
+                'statusTitle' => $edom->isDraft()
+                    ? 'EDOM belum dibuka'
+                    : 'EDOM sudah ditutup',
+                'statusMessage' => $edom->isDraft()
+                    ? 'Form evaluasi ini masih berstatus draft, sehingga belum bisa diisi oleh mahasiswa.'
+                    : 'Form evaluasi ini sudah ditutup dan tidak lagi menerima jawaban baru.',
+            ]);
+        }
+
         return view('edom.show', [
-            'edom' => $this->prepareEdom($edom),
+            'edom' => $edom,
         ]);
+    }
+
+    public function submitFromHome(Request $request): RedirectResponse
+    {
+        $edom = Edom::query()->findOrFail($request->input('edom_id'));
+
+        return $this->submit($request, $edom);
     }
 
     public function submit(Request $request, Edom $edom): RedirectResponse
     {
         $edom = $this->prepareEdom($edom);
+
+        if (! $edom->isActive()) {
+            return redirect()
+                ->route('edom.home')
+                ->with('error', 'EDOM tidak sedang aktif, sehingga jawaban tidak dapat dikirim.');
+        }
+
         $questions = $edom->categories->flatMap(fn ($category) => $category->questions);
         $optionIds = $edom->options->pluck('id')->map(fn ($id) => (string) $id)->values()->all();
 
         $rules = [
+            'edom_id' => ['required', 'integer'],
             'nama_responden' => ['nullable', 'string', 'max:150'],
             'nim' => ['nullable', 'string', 'max:50'],
         ];
@@ -78,7 +150,7 @@ class EdomPublicController extends Controller
         });
 
         return redirect()
-            ->route('edom.fill', $edom)
+            ->route('edom.home')
             ->with('success', 'Terima kasih, jawaban EDOM Anda berhasil dikirim.');
     }
 
