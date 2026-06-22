@@ -29,7 +29,7 @@
 
         .edom-public-main {
             min-height: 70vh;
-            padding: 32px 16px 56px;
+            padding: 0 16px 56px;
         }
 
         .edom-public-container {
@@ -41,7 +41,7 @@
         .edom-form-card {
             background: #ffffff;
             border: 1px solid var(--edom-border);
-            border-radius: 18px;
+            border-top: 0;
             box-shadow: 0 18px 45px rgba(2, 43, 99, 0.08);
             overflow: hidden;
         }
@@ -50,7 +50,7 @@
             display: flex;
             justify-content: space-between;
             gap: 20px;
-            padding: 28px 32px;
+            padding: 26px 32px;
             border-bottom: 1px solid var(--edom-border);
             background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
         }
@@ -168,7 +168,6 @@
             width: 100%;
             overflow-x: auto;
             border: 1px solid var(--edom-border);
-            border-radius: 14px;
             background: #ffffff;
         }
 
@@ -191,10 +190,6 @@
         .edom-input-table th:last-child,
         .edom-input-table td:last-child {
             border-right: 0;
-        }
-
-        .edom-input-table tr:last-child td {
-            border-bottom: 0;
         }
 
         .edom-input-table thead th {
@@ -379,11 +374,7 @@
 
         @media (max-width: 640px) {
             .edom-public-main {
-                padding: 20px 10px 36px;
-            }
-
-            .edom-form-card {
-                border-radius: 14px;
+                padding: 0 10px 36px;
             }
 
             .edom-form-title {
@@ -436,12 +427,25 @@
 
             return $result;
         };
+
+        $formatCategoryTitle = function (?string $title, int $index) use ($toRoman): string {
+            $title = trim((string) $title);
+            $title = $title !== '' ? $title : 'Kategori ' . ($index + 1);
+            $title = preg_replace('/^([IVXLCDM]+)\.\s+\1\.\s+/i', '$1. ', $title);
+
+            if (! preg_match('/^[IVXLCDM]+\.\s+/i', $title)) {
+                $title = $toRoman($index + 1) . '. ' . $title;
+            }
+
+            return $title;
+        };
     @endphp
 
     <main class="edom-public-main">
         <div class="edom-public-container">
-            <form method="POST" action="{{ route('edom.submit', $edom) }}" class="edom-form-card">
+            <form method="POST" action="{{ route('edom.home.submit') }}" class="edom-form-card">
                 @csrf
+                <input type="hidden" name="edom_id" value="{{ $edom->id }}">
 
                 <div class="edom-form-header">
                     <div>
@@ -512,7 +516,7 @@
                                 @forelse ($edom->categories as $categoryIndex => $category)
                                     <tr class="edom-category-row">
                                         <td colspan="{{ $options->count() + 2 }}">
-                                            {{ $toRoman($categoryIndex + 1) }}. {{ $category->nama_kategori }}
+                                            {{ strtoupper($formatCategoryTitle($category->nama_kategori, $categoryIndex)) }}
                                         </td>
                                     </tr>
 
