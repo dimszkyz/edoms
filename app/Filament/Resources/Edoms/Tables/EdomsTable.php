@@ -27,10 +27,10 @@ class EdomsTable
                 TextColumn::make('mataKuliahs.nama')
                     ->label('Mata Kuliah')
                     ->badge()
-                    ->color('primary') 
-                    ->listWithLineBreaks() 
-                    ->limitList(2) 
-                    ->expandableLimitedList() 
+                    ->color('primary')
+                    ->listWithLineBreaks()
+                    ->limitList(2)
+                    ->expandableLimitedList()
                     ->searchable(),
 
                 TextColumn::make('categories_count')
@@ -43,12 +43,19 @@ class EdomsTable
                     ->label('Pertanyaan')
                     ->badge(),
 
+                TextColumn::make('responses_count')
+                    ->counts('responses')
+                    ->label('Hasil')
+                    ->badge()
+                    ->color('success'),
+
                 TextColumn::make('status')
                     ->badge()
-                    ->color(fn(string $state): string => match ($state) {
+                    ->color(fn (string $state): string => match ($state) {
                         'draft' => 'gray',
                         'aktif' => 'success',
                         'ditutup' => 'danger',
+                        default => 'gray',
                     }),
 
                 TextColumn::make('created_at')
