@@ -23,8 +23,13 @@ class EdomsTable
                     ->badge()
                     ->separator(),
 
-                TextColumn::make('mataKuliah.nama')
+                TextColumn::make('mataKuliahs.nama')
                     ->label('Mata Kuliah')
+                    ->badge()
+                    ->color('primary') 
+                    ->listWithLineBreaks() 
+                    ->limitList(2) 
+                    ->expandableLimitedList() 
                     ->searchable(),
 
                 TextColumn::make('categories_count')

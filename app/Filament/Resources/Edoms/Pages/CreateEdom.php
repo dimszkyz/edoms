@@ -8,4 +8,12 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateEdom extends CreateRecord
 {
     protected static string $resource = EdomResource::class;
+
+    protected function getFormActions(): array
+    {
+        return [
+            $this->getCreateFormAction(),
+            $this->getCancelFormAction(), 
+        ];
+    }
 }

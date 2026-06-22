@@ -11,8 +11,6 @@ class Edom extends Model
     protected $fillable = [
         'nama_edom',
         'tanggal_dibuat',
-        'prodi_id',
-        'mata_kuliah_id',
         'status',
     ];
 

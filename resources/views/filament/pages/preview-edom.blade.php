@@ -9,7 +9,76 @@
         }
 
         .edom-preview-form {
-            margin-bottom: 16px;
+            margin-bottom: 24px;
+        }
+
+        .edom-info-card {
+            background-color: rgb(255, 255, 255);
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            margin-bottom: 24px;
+            border: 1px solid rgb(229, 231, 235);
+        }
+
+        .dark .edom-info-card {
+            background-color: rgb(24, 24, 27);
+            border-color: rgb(63, 63, 70);
+        }
+
+        .edom-info-grid {
+            display: grid;
+            grid-template-columns: repeat(1, minmax(0, 1fr));
+            gap: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            .edom-info-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .edom-info-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        .edom-info-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: rgb(107, 114, 128);
+            margin-bottom: 0.25rem;
+        }
+
+        .dark .edom-info-label {
+            color: rgb(161, 161, 170);
+        }
+
+        .edom-info-value {
+            font-size: 1rem;
+            font-weight: 600;
+            color: rgb(17, 24, 39);
+        }
+
+        .dark .edom-info-value {
+            color: rgb(250, 250, 250);
+        }
+
+        .edom-badge {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 9999px;
+            padding: 0.125rem 0.625rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background-color: rgb(243, 244, 246);
+            color: rgb(55, 65, 81);
+        }
+
+        .dark .edom-badge {
+            background-color: rgb(39, 39, 42);
+            color: rgb(228, 228, 231);
         }
 
         .edom-table-wrap {
@@ -96,6 +165,19 @@
             background: transparent;
         }
 
+        .edom-essay-box {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background: #fdfdfd;
+            resize: vertical;
+            min-height: 60px;
+            font-family: inherit;
+            color: #555;
+            box-sizing: border-box;
+        }
+
         .edom-empty {
             padding: 22px 0;
             text-align: center;
@@ -110,15 +192,58 @@
         </div>
 
         @if ($edom)
+            {{-- INFORMASI EDOM CARD --}}
+            <div class="edom-info-card">
+                <h3 class="edom-info-value" style="margin-bottom: 1rem; font-size: 1.125rem;">Informasi Detail EDOM</h3>
+                <div class="edom-info-grid">
+                    <div>
+                        <div class="edom-info-label">Nama EDOM</div>
+                        <div class="edom-info-value">{{ $edom->nama_edom }}</div>
+                    </div>
+                    <div>
+                        <div class="edom-info-label">Program Studi (Prodi)</div>
+                        <div class="edom-info-value">
+                            {{ $edom->prodis->pluck('nama')->join(', ') ?: '-' }}
+                        </div>
+                    </div>
+                    <div>
+                        <div class="edom-info-label">Mata Kuliah</div>
+                        <div class="edom-info-value">
+                            {{ $edom->mataKuliahs->pluck('nama')->join(', ') ?: '-' }}
+                        </div>
+                    </div>
+                    <div>
+                        <div class="edom-info-label">Kategori</div>
+                        <div class="edom-info-value">{{ $edom->categories->count() }} Kategori</div>
+                    </div>
+                    <div>
+                        <div class="edom-info-label">Pertanyaan</div>
+                        <div class="edom-info-value">
+                            {{ $edom->categories->sum(fn($category) => $category->questions->count()) }} Pertanyaan
+                        </div>
+                    </div>
+                    <div>
+                        <div class="edom-info-label">Status</div>
+                        <div class="edom-info-value">
+                            <span class="edom-badge">{{ strtoupper($edom->status ?? '-') }}</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="edom-info-label">Dibuat Pada</div>
+                        <div class="edom-info-value">{{ $edom->created_at ? $edom->created_at->format('d M Y H:i') : '-' }}</div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- TABEL PREVIEW --}}
             <div class="edom-table-wrap">
                 <table class="edom-preview-table">
                     <colgroup>
                         <col class="edom-col-no">
                         <col class="edom-col-statement">
-                        <col class="edom-col-opt">
-                        <col class="edom-col-opt">
-                        <col class="edom-col-opt">
-                        <col class="edom-col-opt">
+                        @foreach ($edom->options as $option)
+                            <col class="edom-col-opt">
+                        @endforeach
                     </colgroup>
 
                     <thead>
@@ -128,7 +253,7 @@
 
                             @foreach ($edom->options as $option)
                                 <th style="width:75px">
-                                    {{ $option->nama }}
+                                    {{ $option->label }} 
                                 </th>
                             @endforeach
                         </tr>
@@ -138,7 +263,7 @@
                         @foreach ($edom->categories as $category)
                             <tr class="edom-section-row">
                                 <td colspan="{{ $edom->options->count() + 2 }}">
-                                    {{ strtoupper($category->nama) }}
+                                    {{ strtoupper($category->nama_kategori) }}
                                 </td>
                             </tr>
 
@@ -149,14 +274,20 @@
                                     </td>
 
                                     <td>
-                                        {{ $question->pertanyaan }}
+                                        {{ $question->pernyataan }}
                                     </td>
 
-                                    @foreach ($edom->options as $option)
-                                        <td class="text-center">
-                                            <span class="edom-radio"></span>
+                                    @if(in_array(strtolower($question->tipe_soal), ['essay', 'esai']))
+                                        <td colspan="{{ $edom->options->count() }}" style="padding: 10px;">
+                                            <textarea class="edom-essay-box" placeholder="Jawaban essay mahasiswa akan diisi di sini..." readonly></textarea>
                                         </td>
-                                    @endforeach
+                                    @else
+                                        @foreach ($edom->options as $option)
+                                            <td class="text-center">
+                                                <span class="edom-radio"></span>
+                                            </td>
+                                        @endforeach
+                                    @endif
 
                                 </tr>
                             @endforeach

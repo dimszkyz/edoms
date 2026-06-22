@@ -22,20 +22,15 @@ class PreviewEdom extends Page implements HasForms
 
     protected string $view = 'filament.pages.preview-edom';
 
-    public ?int $edom_id = null;
+    // 1. Mengubah properti menjadi array $formData agar sesuai dengan ->statePath('formData')
+    public ?array $formData = []; 
 
     public function mount(): void
     {
-        $this->edom_id = Edom::query()->latest()->value('id');
-
+        // 2. Langsung isi form dengan ID EDOM terbaru
         $this->form->fill([
-            'edom_id' => $this->edom_id,
+            'edom_id' => Edom::query()->latest()->value('id'),
         ]);
-    }
-
-    public function updatedEdomId($value): void
-    {
-        $this->edom_id = $value;
     }
 
     public function getForms(): array
@@ -51,17 +46,17 @@ class PreviewEdom extends Page implements HasForms
                     ->label('Pilih EDOM untuk di-preview')
                     ->options(Edom::pluck('nama_edom', 'id'))
                     ->searchable()
-                    ->live()
-                    ->afterStateUpdated(function ($state) {
-                        $this->edom_id = $state;
-                    }),
+                    ->live(), // Cukup gunakan live() agar otomatis me-refresh halaman saat dipilih
             ])
             ->statePath('formData');
     }
 
     public function getEdom(): ?Edom
     {
-        if (!$this->edom_id) {
+        // 3. Ambil edom_id langsung dari array formData
+        $edomId = $this->formData['edom_id'] ?? null;
+
+        if (!$edomId) {
             return null;
         }
 
@@ -70,6 +65,6 @@ class PreviewEdom extends Page implements HasForms
             'mataKuliahs',
             'categories.questions',
             'options',
-        ])->find($this->edom_id);
+        ])->find($edomId);
     }
 }
