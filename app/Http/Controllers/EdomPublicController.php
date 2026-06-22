@@ -121,16 +121,23 @@ class EdomPublicController extends Controller
         DB::transaction(function () use ($request, $edom, $questions) {
             $response = EdomResponse::create([
                 'edom_id' => $edom->id,
+                'nama_edom_snapshot' => $edom->nama_edom,
+                'prodi_snapshot' => $edom->prodis->pluck('nama')->filter()->join(', '),
+                'mata_kuliah_snapshot' => $edom->mataKuliahs->pluck('nama')->filter()->join(', '),
                 'nama_responden' => $request->input('nama_responden'),
                 'nim' => $request->input('nim'),
                 'submitted_at' => now(),
             ]);
 
             foreach ($questions as $question) {
+                $categoryName = $question->category?->nama_kategori;
+
                 if ($this->isEssayQuestion($question)) {
                     EdomAnswer::create([
                         'edom_response_id' => $response->id,
                         'edom_question_id' => $question->id,
+                        'nama_kategori_snapshot' => $categoryName,
+                        'pernyataan_snapshot' => $question->pernyataan,
                         'jawaban_teks' => $request->input("essays.{$question->id}"),
                     ]);
 
@@ -143,7 +150,11 @@ class EdomPublicController extends Controller
                 EdomAnswer::create([
                     'edom_response_id' => $response->id,
                     'edom_question_id' => $question->id,
+                    'nama_kategori_snapshot' => $categoryName,
+                    'pernyataan_snapshot' => $question->pernyataan,
                     'edom_option_id' => $option?->id,
+                    'option_label_snapshot' => $option?->label,
+                    'option_nilai_snapshot' => $option?->nilai,
                     'nilai' => $option?->nilai,
                 ]);
             }
