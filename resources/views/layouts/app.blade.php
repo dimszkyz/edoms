@@ -7,6 +7,7 @@
 
     <title>@yield('title', 'EDOM Universitas Ngudi Waluyo')</title>
 
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     @yield('styles')
 </head>
 <body>
