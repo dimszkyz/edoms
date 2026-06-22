@@ -7,8 +7,8 @@
                 <div class="brand-text-left">
                     <div class="brand-main">EDOM</div>
                     <div class="brand-sub">
-                        Universitas Ngudi Waluyo<br>
-                        Pasca Sarjana
+                        UNIVERSITAS NGUDI WALUYO<br>
+                        PASCASARJANA
                     </div>
                 </div>
 
@@ -16,7 +16,7 @@
 
                 <div class="brand-school">
                     POSTGRADUATE SCHOOL<br>
-                    UNIVCASARJANA
+                    PASCASARJANA
                 </div>
             </div>
         </a>

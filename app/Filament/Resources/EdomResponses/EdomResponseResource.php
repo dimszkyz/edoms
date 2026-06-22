@@ -30,7 +30,7 @@ class EdomResponseResource extends Resource
 
     protected static ?int $navigationSort = 20;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentCheck;
 
     protected static ?string $recordTitleAttribute = 'nama_responden';
 
