@@ -73,7 +73,7 @@
                     <div class="empty">
                         Belum ada EDOM yang aktif saat ini.
                         @if ($draftCount > 0)
-                            <br>EDOM sedang disiapkan oleh admin dan akan muncul di sini setelah statusnya diubah menjadi aktif.
+                            <br>Belum ada EDOM yang aktif untuk saat ini, harap tunggu dan kembali beberapa saat lagi.
                         @endif
                     </div>
                 @endif

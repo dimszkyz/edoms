@@ -155,7 +155,7 @@
 <header class="header">
     <div class="header-container">
         <a class="header-brand" href="{{ route('edom.home') }}">
-            <img src="{{ asset('assets/images/logo_unwnobg.svg') }}" alt="Logo UNW" class="header-logo">
+            <img src="{{ asset('assets/images/logo_unwnobg.png') }}" alt="Logo UNW" class="header-logo">
 
             <div class="brand-unw">
                 <div class="brand-text-left">
