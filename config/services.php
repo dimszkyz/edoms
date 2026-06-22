@@ -37,6 +37,7 @@ return [
 
     'unw_program_studi' => [
         'url' => env('UNW_PROGRAM_STUDI_API_URL', 'https://panel-web.unw.ac.id/api/unw-program-studi'),
+        'verify_ssl' => env('UNW_PROGRAM_STUDI_VERIFY_SSL', true),
     ],
 
 ];
