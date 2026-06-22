@@ -5,6 +5,9 @@ namespace App\Filament\Resources\Edoms;
 use App\Filament\Resources\Edoms\Pages\CreateEdom;
 use App\Filament\Resources\Edoms\Pages\EditEdom;
 use App\Filament\Resources\Edoms\Pages\ListEdoms;
+use App\Filament\Resources\Edoms\RelationManagers\CategoriesRelationManager;
+use App\Filament\Resources\Edoms\RelationManagers\OptionsRelationManager;
+use App\Filament\Resources\Edoms\RelationManagers\ResponsesRelationManager;
 use App\Filament\Resources\Edoms\Schemas\EdomForm;
 use App\Filament\Resources\Edoms\Tables\EdomsTable;
 use App\Models\Edom;
@@ -13,9 +16,6 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
-use App\Filament\Resources\Edoms\RelationManagers\CategoriesRelationManager;
-use App\Filament\Resources\Edoms\RelationManagers\OptionsRelationManager;
-
 
 class EdomResource extends Resource
 {
@@ -26,7 +26,7 @@ class EdomResource extends Resource
     protected static ?string $navigationLabel = 'Kelola EDOM';
 
     protected static ?string $modelLabel = 'EDOM';
-    
+
     protected static ?string $pluralModelLabel = 'EDOM';
 
     protected static ?string $slug = 'edom';
@@ -50,6 +50,7 @@ class EdomResource extends Resource
         return [
             CategoriesRelationManager::class,
             OptionsRelationManager::class,
+            ResponsesRelationManager::class,
         ];
     }
 
