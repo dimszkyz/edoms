@@ -9,6 +9,7 @@
         :root {
             --edom-primary: #022B63;
             --edom-secondary: #1e1b7a;
+            --edom-purple: #4f46e5;
             --edom-accent: #dc2626;
             --edom-border: #e2e8f0;
             --edom-soft: #f8fafc;
@@ -29,7 +30,7 @@
 
         .edom-public-main {
             min-height: 70vh;
-            padding: 0 16px 56px;
+            padding: 40px 16px 56px;
         }
 
         .edom-public-container {
@@ -39,70 +40,134 @@
         }
 
         .edom-form-card {
-            background: #ffffff;
-            border: 1px solid var(--edom-border);
-            border-top: 0;
-            box-shadow: 0 18px 45px rgba(2, 43, 99, 0.08);
+            margin: 0;
+        }
+
+        .edom-intro-card {
+            position: relative;
             overflow: hidden;
+            margin: 0 auto 28px;
+            padding: 44px 52px 48px;
+            background: #ffffff;
+            border: 1px solid #e5eaf3;
+            border-radius: 14px;
+            box-shadow: 0 18px 45px rgba(2, 43, 99, 0.06);
         }
 
-        .edom-form-header {
-            display: flex;
-            justify-content: space-between;
-            gap: 20px;
-            padding: 26px 32px;
-            border-bottom: 1px solid var(--edom-border);
-            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+        .edom-intro-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 10px;
+            background: var(--edom-purple);
         }
 
-        .edom-form-eyebrow {
-            margin: 0 0 8px;
-            color: var(--edom-secondary);
-            font-size: 13px;
-            font-weight: 800;
-            letter-spacing: 1.6px;
+        .edom-intro-title {
+            margin: 0;
+            color: #071225;
+            font-size: 34px;
+            line-height: 1.18;
+            font-weight: 900;
+            letter-spacing: 0.3px;
             text-transform: uppercase;
         }
 
-        .edom-form-title {
-            margin: 0;
-            color: var(--edom-primary);
-            font-size: 28px;
-            line-height: 1.25;
-            font-weight: 800;
+        .edom-intro-subtitle {
+            margin: 12px 0 28px;
+            color: var(--edom-purple);
+            font-size: 19px;
+            line-height: 1.5;
+            font-weight: 700;
         }
 
-        .edom-form-subtitle {
-            margin: 10px 0 0;
-            color: var(--edom-muted);
-            font-size: 15px;
-            line-height: 1.7;
+        .edom-guide-box {
+            padding: 24px 28px;
+            background: #eef2ff;
+            border: 1px solid #dbe3ff;
+            border-radius: 12px;
         }
 
-        .edom-info-pills {
+        .edom-guide-title {
             display: flex;
-            flex-wrap: wrap;
-            justify-content: flex-end;
+            align-items: center;
             gap: 10px;
-            min-width: 260px;
+            margin: 0 0 14px;
+            color: var(--edom-secondary);
+            font-size: 17px;
+            font-weight: 900;
         }
 
-        .edom-pill {
+        .edom-guide-icon {
             display: inline-flex;
             align-items: center;
-            min-height: 38px;
-            padding: 8px 13px;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            border: 2px solid currentColor;
             border-radius: 999px;
-            background: #ffffff;
-            border: 1px solid #dbeafe;
-            color: var(--edom-primary);
-            font-size: 13px;
-            font-weight: 700;
-            box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
+            font-size: 14px;
+            line-height: 1;
+            font-weight: 900;
+        }
+
+        .edom-guide-text {
+            margin: 0;
+            color: #475569;
+            font-size: 17px;
+            line-height: 1.75;
+        }
+
+        .edom-scale-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .edom-scale-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 38px;
+            padding: 8px 20px;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.32);
+            color: #0f172a;
+            font-size: 15px;
+            font-weight: 900;
+            box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+        }
+
+        .edom-scale-badge.scale-1,
+        .edom-scale-badge.scale-6 {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .edom-scale-badge.scale-2 {
+            background: #ffedd5;
+            color: #c2410c;
+        }
+
+        .edom-scale-badge.scale-3 {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .edom-scale-badge.scale-4 {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+
+        .edom-scale-badge.scale-5 {
+            background: #f8fafc;
+            color: #102347;
         }
 
         .edom-alert {
-            margin: 22px 32px 0;
+            margin: 0 0 22px;
             padding: 14px 16px;
             border-radius: 12px;
             font-size: 14px;
@@ -121,53 +186,15 @@
             color: #991b1b;
         }
 
-        .edom-identity-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 16px;
-            padding: 24px 32px 0;
-        }
-
-        .edom-field label {
-            display: block;
-            margin-bottom: 8px;
-            color: #334155;
-            font-size: 13px;
-            font-weight: 800;
-        }
-
-        .edom-field input {
-            width: 100%;
-            height: 44px;
-            padding: 10px 13px;
-            border: 1px solid #cbd5e1;
-            border-radius: 10px;
-            color: var(--edom-text);
-            font-size: 14px;
-            outline: none;
-            transition: 0.2s ease;
-        }
-
-        .edom-field input:focus {
-            border-color: var(--edom-primary);
-            box-shadow: 0 0 0 3px rgba(2, 43, 99, 0.12);
-        }
-
         .edom-table-area {
-            padding: 24px 32px 32px;
-        }
-
-        .edom-table-helper {
-            margin: 0 0 14px;
-            color: var(--edom-muted);
-            font-size: 14px;
-            line-height: 1.6;
+            margin: 0 auto;
         }
 
         .edom-table-wrap {
             width: 100%;
             overflow-x: auto;
             border: 1px solid var(--edom-border);
+            border-radius: 14px 14px 0 0;
             background: #ffffff;
         }
 
@@ -325,7 +352,7 @@
             display: flex;
             justify-content: flex-end;
             gap: 12px;
-            padding: 0 32px 32px;
+            padding: 24px 0 0;
         }
 
         .edom-submit-button {
@@ -354,40 +381,39 @@
         }
 
         @media (max-width: 900px) {
-            .edom-form-header {
-                flex-direction: column;
-                padding: 24px;
+            .edom-public-main {
+                padding-top: 24px;
             }
 
-            .edom-info-pills {
-                justify-content: flex-start;
-                min-width: 0;
+            .edom-intro-card {
+                padding: 34px 28px 32px;
             }
 
-            .edom-identity-grid,
-            .edom-table-area,
-            .edom-action-bar {
-                padding-left: 24px;
-                padding-right: 24px;
+            .edom-intro-title {
+                font-size: 28px;
             }
         }
 
         @media (max-width: 640px) {
             .edom-public-main {
-                padding: 0 10px 36px;
+                padding: 18px 10px 36px;
             }
 
-            .edom-form-title {
-                font-size: 22px;
+            .edom-intro-card {
+                padding: 30px 20px 24px;
             }
 
-            .edom-identity-grid {
-                grid-template-columns: 1fr;
+            .edom-intro-title {
+                font-size: 23px;
             }
 
-            .edom-alert {
-                margin-left: 18px;
-                margin-right: 18px;
+            .edom-intro-subtitle,
+            .edom-guide-text {
+                font-size: 15px;
+            }
+
+            .edom-guide-box {
+                padding: 18px;
             }
         }
     </style>
@@ -447,21 +473,35 @@
                 @csrf
                 <input type="hidden" name="edom_id" value="{{ $edom->id }}">
 
-                <div class="edom-form-header">
-                    <div>
-                        <p class="edom-form-eyebrow">Form Evaluasi Dosen Oleh Mahasiswa</p>
-                        <h1 class="edom-form-title">{{ $edom->nama_edom }}</h1>
-                        <p class="edom-form-subtitle">
-                            Silakan pilih salah satu jawaban pada setiap pernyataan evaluasi. Jawaban Anda akan digunakan untuk peningkatan kualitas pembelajaran.
-                        </p>
-                    </div>
+                <section class="edom-intro-card" aria-labelledby="edom-intro-title">
+                    <h1 id="edom-intro-title" class="edom-intro-title">EVALUASI DOSEN OLEH MAHASISWA</h1>
+                    <p class="edom-intro-subtitle">Instrumen Penilaian Akademik (EDOM)</p>
 
-                    <div class="edom-info-pills">
-                        <span class="edom-pill">Status: {{ strtoupper($edom->status ?? '-') }}</span>
-                        <span class="edom-pill">{{ $edom->prodis->pluck('nama')->join(', ') ?: 'Semua Prodi' }}</span>
-                        <span class="edom-pill">{{ $edom->mataKuliahs->pluck('nama')->join(', ') ?: 'Semua Mata Kuliah' }}</span>
+                    <div class="edom-guide-box">
+                        <p class="edom-guide-title">
+                            <span class="edom-guide-icon">i</span>
+                            Petunjuk Pengisian
+                        </p>
+                        <p class="edom-guide-text">
+                            Pilihlah satu jawaban yang paling mencerminkan kondisi nyata di kelas dengan memberikan tanda centang atau klik pada salah satu skala di dalam tabel berikut:
+                        </p>
+
+                        @if ($options->isNotEmpty())
+                            <div class="edom-scale-list" aria-label="Skala penilaian EDOM">
+                                @foreach ($options as $option)
+                                    @php
+                                        $scaleValue = $option->nilai ?: $loop->iteration;
+                                        $scaleLabel = ucwords(strtolower((string) $option->label));
+                                        $scaleClass = (($loop->index % 6) + 1);
+                                    @endphp
+                                    <span class="edom-scale-badge scale-{{ $scaleClass }}">
+                                        {{ $scaleValue }} = {{ $scaleLabel }}
+                                    </span>
+                                @endforeach
+                            </div>
+                        @endif
                     </div>
-                </div>
+                </section>
 
                 @if (session('success'))
                     <div class="edom-alert edom-alert-success">
@@ -475,23 +515,7 @@
                     </div>
                 @endif
 
-                <div class="edom-identity-grid">
-                    <div class="edom-field">
-                        <label for="nama_responden">Nama Mahasiswa <span style="color:#94a3b8;font-weight:600;">(opsional)</span></label>
-                        <input type="text" id="nama_responden" name="nama_responden" value="{{ old('nama_responden') }}" placeholder="Masukkan nama mahasiswa">
-                    </div>
-
-                    <div class="edom-field">
-                        <label for="nim">NIM <span style="color:#94a3b8;font-weight:600;">(opsional)</span></label>
-                        <input type="text" id="nim" name="nim" value="{{ old('nim') }}" placeholder="Masukkan NIM">
-                    </div>
-                </div>
-
                 <div class="edom-table-area">
-                    <p class="edom-table-helper">
-                        Gunakan skala penilaian yang tersedia pada kolom kanan. Geser tabel ke samping jika dibuka melalui layar kecil.
-                    </p>
-
                     <div class="edom-table-wrap">
                         <table class="edom-input-table">
                             <colgroup>
