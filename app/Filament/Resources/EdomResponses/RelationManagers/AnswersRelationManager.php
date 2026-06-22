@@ -38,8 +38,27 @@ class AnswersRelationManager extends RelationManager
 
                 TextColumn::make('option_label_snapshot')
                     ->label('Pilihan')
-                    ->state(fn (EdomAnswer $record): string => $record->option_label_snapshot ?: ($record->option?->label ?? 'Jawaban Esai'))
-                    ->badge(),
+                    ->state(function (EdomAnswer $record): string {
+                        $label = $record->option_label_snapshot ?: $record->option?->label;
+
+                        if (filled($label)) {
+                            return $label;
+                        }
+
+                        $score = $record->option_nilai_snapshot ?? $record->nilai;
+
+                        if ($score !== null) {
+                            return 'Opsi terhapus (nilai ' . $score . ')';
+                        }
+
+                        if (filled($record->jawaban_teks)) {
+                            return '-';
+                        }
+
+                        return '-';
+                    })
+                    ->badge()
+                    ->color(fn (EdomAnswer $record): string => ($record->option_label_snapshot || $record->option?->label) ? 'success' : 'gray'),
 
                 TextColumn::make('nilai')
                     ->label('Nilai')
