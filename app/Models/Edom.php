@@ -53,8 +53,14 @@ class Edom extends Model
     {
         return $this->status === 'ditutup';
     }
+
     public function options()
     {
         return $this->hasMany(EdomOption::class);
+    }
+
+    public function responses()
+    {
+        return $this->hasMany(EdomResponse::class);
     }
 }
