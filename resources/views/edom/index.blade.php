@@ -1,9 +1,8 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EDOM Universitas Ngudi Waluyo</title>
+@extends('layouts.app')
+
+@section('title', 'EDOM Universitas Ngudi Waluyo')
+
+@section('styles')
     <style>
         body { margin: 0; background: #f4f7fb; color: #102347; font-family: Arial, Helvetica, sans-serif; }
         .page { min-height: 70vh; padding: 40px 16px 64px; }
@@ -29,10 +28,9 @@
         .empty { background: #fff; border: 1px dashed #cbd5e1; border-radius: 16px; padding: 28px; color: #64748b; line-height: 1.7; text-align: center; }
         @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } h1 { font-size: 26px; } .hero { padding: 24px; } }
     </style>
-</head>
-<body>
-    @include('component.header')
+@endsection
 
+@section('content')
     <main class="page">
         <div class="container">
             <section class="hero">
@@ -99,7 +97,4 @@
             @endif
         </div>
     </main>
-
-    @include('component.footer')
-</body>
-</html>
+@endsection
