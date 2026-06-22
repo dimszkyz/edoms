@@ -100,7 +100,7 @@ class EdomPublicController extends Controller
         $optionIds = $edom->options->pluck('id')->map(fn ($id) => (string) $id)->values()->all();
 
         $rules = [
-            'edom_id' => ['required', 'integer'],
+            'edom_id' => ['nullable', 'integer'],
             'nama_responden' => ['nullable', 'string', 'max:150'],
             'nim' => ['nullable', 'string', 'max:50'],
         ];
