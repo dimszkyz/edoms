@@ -10,8 +10,6 @@ class EdomResponse extends Model
         'edom_id',
         'nama_responden',
         'nim',
-        'ip_address',
-        'user_agent',
         'submitted_at',
     ];
 
