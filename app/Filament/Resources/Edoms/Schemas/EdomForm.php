@@ -3,18 +3,11 @@
 namespace App\Filament\Resources\Edoms\Schemas;
 
 use App\Models\MataKuliah;
-
+use App\Models\Prodi;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-
 use Filament\Schemas\Schema;
-
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Grid;
-use Filament\Schemas\Components\Placeholder;
-
-use Filament\Schemas\Components\Utilities\Set;
 
 class EdomForm
 {
@@ -26,17 +19,18 @@ class EdomForm
                     ->label('Nama EDOM')
                     ->required()
                     ->maxLength(255)
-                    ->disabled(fn($record) => $record && !$record->isDraft()),
+                    ->disabled(fn ($record) => $record && ! $record->isDraft()),
 
                 DatePicker::make('tanggal_dibuat')
                     ->label('Tanggal Dibuat')
                     ->default(now())
                     ->required()
-                    ->disabled(fn($record) => $record && !$record->isDraft()),
+                    ->disabled(fn ($record) => $record && ! $record->isDraft()),
 
                 Select::make('prodis')
                     ->label('Prodi')
                     ->relationship('prodis', 'nama')
+                    ->getOptionLabelFromRecordUsing(fn (Prodi $record): string => $record->display_name)
                     ->multiple()
                     ->searchable()
                     ->preload()
@@ -49,12 +43,12 @@ class EdomForm
                             return;
                         }
 
-                        if (!empty($selectedMataKuliahs)) {
+                        if (! empty($selectedMataKuliahs)) {
                             $validMataKuliahs = MataKuliah::whereIn('prodi_id', $state)
                                 ->whereIn('id', $selectedMataKuliahs)
                                 ->pluck('id')
                                 ->toArray();
-                                
+
                             $set('mataKuliahs', $validMataKuliahs);
                         }
                     })
@@ -66,7 +60,6 @@ class EdomForm
                         name: 'mataKuliahs',
                         titleAttribute: 'nama',
                         modifyQueryUsing: function ($query, $get) {
-
                             $prodis = $get('prodis');
 
                             if (blank($prodis)) {
@@ -89,7 +82,7 @@ class EdomForm
                         'aktif' => 'Aktif',
                         'ditutup' => 'Ditutup',
                     ])
-                    ->disabled(fn($record) => $record && $record->status === 'ditutup')
+                    ->disabled(fn ($record) => $record && $record->status === 'ditutup')
                     ->required(),
             ]);
     }
