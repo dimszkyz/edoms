@@ -7,7 +7,22 @@ use Illuminate\Database\Eloquent\Model;
 class Prodi extends Model
 {
     protected $fillable = [
+        'unw_prodi_id',
         'nama',
+        'slug',
+        'page_slug',
+        'jenjang',
+        'jenjang_nama_singkat',
+        'fakultas_unw_id',
+        'fakultas_nama',
+        'fakultas_page_slug',
+        'api_updated_at',
+        'synced_at',
+    ];
+
+    protected $casts = [
+        'api_updated_at' => 'datetime',
+        'synced_at' => 'datetime',
     ];
 
     public function mataKuliahs()
