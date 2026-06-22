@@ -20,10 +20,23 @@ class EdomResponsesTable
                 ->latest('submitted_at')
                 ->latest('id'))
             ->columns([
-                TextColumn::make('edom.nama_edom')
+                TextColumn::make('nama_edom_snapshot')
                     ->label('EDOM')
+                    ->state(fn (EdomResponse $record): string => $record->nama_edom_snapshot ?: ($record->edom?->nama_edom ?? 'EDOM dihapus'))
                     ->searchable()
                     ->sortable(),
+
+                TextColumn::make('prodi_snapshot')
+                    ->label('Prodi')
+                    ->placeholder('-')
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->wrap(),
+
+                TextColumn::make('mata_kuliah_snapshot')
+                    ->label('Mata Kuliah')
+                    ->placeholder('-')
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->wrap(),
 
                 TextColumn::make('nama_responden')
                     ->label('Nama Mahasiswa')
@@ -59,7 +72,7 @@ class EdomResponsesTable
             ])
             ->filters([
                 SelectFilter::make('edom')
-                    ->label('EDOM')
+                    ->label('EDOM Aktif/Tersedia')
                     ->relationship('edom', 'nama_edom')
                     ->searchable()
                     ->preload()
