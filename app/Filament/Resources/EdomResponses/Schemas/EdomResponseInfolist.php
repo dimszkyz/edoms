@@ -15,8 +15,17 @@ class EdomResponseInfolist
             ->components([
                 Section::make('Informasi Pengisian')
                     ->schema([
-                        TextEntry::make('edom.nama_edom')
-                            ->label('EDOM'),
+                        TextEntry::make('nama_edom_snapshot')
+                            ->label('EDOM')
+                            ->state(fn (EdomResponse $record): string => $record->nama_edom_snapshot ?: ($record->edom?->nama_edom ?? 'EDOM dihapus')),
+
+                        TextEntry::make('prodi_snapshot')
+                            ->label('Prodi')
+                            ->placeholder('-'),
+
+                        TextEntry::make('mata_kuliah_snapshot')
+                            ->label('Mata Kuliah')
+                            ->placeholder('-'),
 
                         TextEntry::make('nama_responden')
                             ->label('Nama Mahasiswa')
