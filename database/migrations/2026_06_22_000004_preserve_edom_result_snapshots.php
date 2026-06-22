@@ -16,41 +16,44 @@ return new class extends Migration
 
     private function addSnapshotColumns(): void
     {
-        if (Schema::hasTable('edom_responses')) {
-            Schema::table('edom_responses', function (Blueprint $table) {
-                if (! Schema::hasColumn('edom_responses', 'nama_edom_snapshot')) {
-                    $table->string('nama_edom_snapshot')->nullable()->after('edom_id');
-                }
+        $this->addColumnIfMissing('edom_responses', 'nama_edom_snapshot', function (Blueprint $table) {
+            $table->string('nama_edom_snapshot')->nullable()->after('edom_id');
+        });
 
-                if (! Schema::hasColumn('edom_responses', 'prodi_snapshot')) {
-                    $table->text('prodi_snapshot')->nullable()->after('nama_edom_snapshot');
-                }
+        $this->addColumnIfMissing('edom_responses', 'prodi_snapshot', function (Blueprint $table) {
+            $table->text('prodi_snapshot')->nullable()->after('nama_edom_snapshot');
+        });
 
-                if (! Schema::hasColumn('edom_responses', 'mata_kuliah_snapshot')) {
-                    $table->text('mata_kuliah_snapshot')->nullable()->after('prodi_snapshot');
-                }
-            });
+        $this->addColumnIfMissing('edom_responses', 'mata_kuliah_snapshot', function (Blueprint $table) {
+            $table->text('mata_kuliah_snapshot')->nullable()->after('prodi_snapshot');
+        });
+
+        $this->addColumnIfMissing('edom_answers', 'nama_kategori_snapshot', function (Blueprint $table) {
+            $table->string('nama_kategori_snapshot')->nullable()->after('edom_question_id');
+        });
+
+        $this->addColumnIfMissing('edom_answers', 'pernyataan_snapshot', function (Blueprint $table) {
+            $table->text('pernyataan_snapshot')->nullable()->after('nama_kategori_snapshot');
+        });
+
+        $this->addColumnIfMissing('edom_answers', 'option_label_snapshot', function (Blueprint $table) {
+            $table->string('option_label_snapshot')->nullable()->after('edom_option_id');
+        });
+
+        $this->addColumnIfMissing('edom_answers', 'option_nilai_snapshot', function (Blueprint $table) {
+            $table->integer('option_nilai_snapshot')->nullable()->after('option_label_snapshot');
+        });
+    }
+
+    private function addColumnIfMissing(string $tableName, string $columnName, callable $definition): void
+    {
+        if (! Schema::hasTable($tableName) || Schema::hasColumn($tableName, $columnName)) {
+            return;
         }
 
-        if (Schema::hasTable('edom_answers')) {
-            Schema::table('edom_answers', function (Blueprint $table) {
-                if (! Schema::hasColumn('edom_answers', 'nama_kategori_snapshot')) {
-                    $table->string('nama_kategori_snapshot')->nullable()->after('edom_question_id');
-                }
-
-                if (! Schema::hasColumn('edom_answers', 'pernyataan_snapshot')) {
-                    $table->text('pernyataan_snapshot')->nullable()->after('nama_kategori_snapshot');
-                }
-
-                if (! Schema::hasColumn('edom_answers', 'option_label_snapshot')) {
-                    $table->string('option_label_snapshot')->nullable()->after('edom_option_id');
-                }
-
-                if (! Schema::hasColumn('edom_answers', 'option_nilai_snapshot')) {
-                    $table->integer('option_nilai_snapshot')->nullable()->after('option_label_snapshot');
-                }
-            });
-        }
+        Schema::table($tableName, function (Blueprint $table) use ($definition) {
+            $definition($table);
+        });
     }
 
     private function backfillExistingSnapshots(): void
