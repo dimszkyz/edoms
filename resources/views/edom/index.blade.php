@@ -8,10 +8,7 @@
             <section class="hero">
                 <p class="eyebrow">Evaluasi Dosen Oleh Mahasiswa</p>
                 <h1>EDOM Universitas Ngudi Waluyo</h1>
-                <p class="lead">
-                    Halaman ini menampilkan EDOM yang sedang aktif. Jika hanya ada satu EDOM aktif, form akan langsung
-                    terbuka di halaman utama.
-                </p>
+                
 
                 @if (session('success'))
                     <div class="alert success">{{ session('success') }}</div>
@@ -42,7 +39,6 @@
                     </div>
                 @else
                     <div class="empty">
-                        Belum ada EDOM yang aktif saat ini.
                         @if ($draftCount > 0)
                             <br>Belum ada EDOM yang aktif untuk saat ini, harap tunggu dan kembali beberapa saat lagi.
                         @endif

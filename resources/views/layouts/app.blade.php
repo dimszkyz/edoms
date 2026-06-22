@@ -7,6 +7,9 @@
 
     <title>@yield('title', 'EDOM Universitas Ngudi Waluyo')</title>
 
+    <link rel="icon" type="image/png" href="{{ asset('assets/images/logo_unwnobg.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('assets/images/logo_unwnobg.png') }}">
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @yield('styles')
 </head>
