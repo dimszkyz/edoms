@@ -2,8 +2,6 @@
 
 namespace App\Filament\Resources\Prodis;
 
-use App\Filament\Resources\Prodis\Pages\CreateProdi;
-use App\Filament\Resources\Prodis\Pages\EditProdi;
 use App\Filament\Resources\Prodis\Pages\ListProdis;
 use App\Filament\Resources\Prodis\Schemas\ProdiForm;
 use App\Filament\Resources\Prodis\Tables\ProdisTable;
@@ -13,6 +11,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 class ProdiResource extends Resource
 {
@@ -23,7 +22,7 @@ class ProdiResource extends Resource
     protected static ?string $navigationLabel = 'Prodi';
 
     protected static ?string $modelLabel = 'Prodi';
-    
+
     protected static ?string $pluralModelLabel = 'Prodi';
 
     protected static ?string $slug = 'prodi';
@@ -31,6 +30,21 @@ class ProdiResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static ?string $recordTitleAttribute = 'nama';
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return false;
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return false;
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -53,8 +67,6 @@ class ProdiResource extends Resource
     {
         return [
             'index' => ListProdis::route('/'),
-            'create' => CreateProdi::route('/create'),
-            'edit' => EditProdi::route('/{record}/edit'),
         ];
     }
 }
