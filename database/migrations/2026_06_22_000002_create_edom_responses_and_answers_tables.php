@@ -14,8 +14,6 @@ return new class extends Migration
                 $table->foreignId('edom_id')->constrained('edoms')->cascadeOnDelete();
                 $table->string('nama_responden')->nullable();
                 $table->string('nim')->nullable();
-                $table->string('ip_address', 45)->nullable();
-                $table->text('user_agent')->nullable();
                 $table->timestamp('submitted_at')->nullable();
                 $table->timestamps();
             });
