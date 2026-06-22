@@ -25,6 +25,11 @@ class Prodi extends Model
         'synced_at' => 'datetime',
     ];
 
+    public function getDisplayNameAttribute(): string
+    {
+        return trim(($this->jenjang_nama_singkat ? $this->jenjang_nama_singkat . ' - ' : '') . $this->nama);
+    }
+
     public function mataKuliahs()
     {
         return $this->hasMany(MataKuliah::class);
