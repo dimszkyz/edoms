@@ -128,7 +128,7 @@
 
                             @foreach ($edom->options as $option)
                                 <th style="width:75px">
-                                    {{ $option->nama }}
+                                    {{ $option->label }}
                                 </th>
                             @endforeach
                         </tr>
@@ -138,7 +138,7 @@
                         @foreach ($edom->categories as $category)
                             <tr class="edom-section-row">
                                 <td colspan="{{ $edom->options->count() + 2 }}">
-                                    {{ strtoupper($category->nama) }}
+                                    {{ strtoupper($category->nama_kategori) }}
                                 </td>
                             </tr>
 
@@ -149,7 +149,7 @@
                                     </td>
 
                                     <td>
-                                        {{ $question->pertanyaan }}
+                                        {{ $question->pernyataan }}
                                     </td>
 
                                     @foreach ($edom->options as $option)
