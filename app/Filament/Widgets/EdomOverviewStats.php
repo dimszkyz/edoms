@@ -5,6 +5,7 @@ namespace App\Filament\Widgets;
 use App\Models\Edom;
 use App\Models\EdomCategory;
 use App\Models\EdomQuestion;
+use App\Models\EdomResponse;
 use App\Models\MataKuliah;
 use App\Models\Prodi;
 use Filament\Widgets\StatsOverviewWidget;
@@ -30,6 +31,10 @@ class EdomOverviewStats extends StatsOverviewWidget
             Stat::make('Ditutup', Edom::query()->where('status', 'ditutup')->count())
                 ->description('EDOM yang sudah selesai')
                 ->color('danger'),
+
+            Stat::make('Total Hasil Masuk', EdomResponse::query()->count())
+                ->description('Jumlah pengisian EDOM dari mahasiswa')
+                ->color('success'),
 
             Stat::make('Total Pertanyaan', EdomQuestion::query()->count())
                 ->description('Jumlah pertanyaan evaluasi')
