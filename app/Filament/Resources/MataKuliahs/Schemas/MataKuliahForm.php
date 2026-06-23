@@ -13,15 +13,15 @@ class MataKuliahForm
     {
         return $schema
             ->components([
-                Select::make('prodi_id')
+                Select::make('study_program_id')
                     ->label('Prodi')
-                    ->relationship('prodi', 'nama')
+                    ->relationship('prodi', 'name')
                     ->getOptionLabelFromRecordUsing(fn (Prodi $record): string => $record->display_name)
                     ->searchable()
                     ->preload()
                     ->required(),
 
-                TextInput::make('nama')
+                TextInput::make('name')
                     ->label('Nama Mata Kuliah')
                     ->required()
                     ->maxLength(255),

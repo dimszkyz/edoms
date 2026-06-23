@@ -20,8 +20,8 @@ class EdomPublicController extends Controller
         $activeEdoms = Edom::query()
             ->with(['prodis', 'mataKuliahs'])
             ->withCount(['categories', 'questions'])
-            ->where('status', 'aktif')
-            ->latest('tanggal_dibuat')
+            ->where('status', 'active')
+            ->latest('created_date')
             ->latest('id')
             ->get();
 
@@ -41,8 +41,8 @@ class EdomPublicController extends Controller
 
         $closedEdoms = Edom::query()
             ->with(['prodis', 'mataKuliahs'])
-            ->where('status', 'ditutup')
-            ->latest('tanggal_dibuat')
+            ->where('status', 'closed')
+            ->latest('created_date')
             ->latest('id')
             ->limit(6)
             ->get();
@@ -101,8 +101,8 @@ class EdomPublicController extends Controller
 
         $rules = [
             'edom_id' => ['nullable', 'integer'],
-            'nama_responden' => ['nullable', 'string', 'max:150'],
-            'nim' => ['nullable', 'string', 'max:50'],
+            'respondent_name' => ['nullable', 'string', 'max:150'],
+            'student_number' => ['nullable', 'string', 'max:50'],
         ];
 
         foreach ($questions as $question) {
@@ -121,24 +121,24 @@ class EdomPublicController extends Controller
         DB::transaction(function () use ($request, $edom, $questions) {
             $response = EdomResponse::create([
                 'edom_id' => $edom->id,
-                'nama_edom_snapshot' => $edom->nama_edom,
-                'prodi_snapshot' => $edom->prodis->pluck('nama')->filter()->join(', '),
-                'mata_kuliah_snapshot' => $edom->mataKuliahs->pluck('nama')->filter()->join(', '),
-                'nama_responden' => $request->input('nama_responden'),
-                'nim' => $request->input('nim'),
+                'edom_name_snapshot' => $edom->edom_name,
+                'study_program_snapshot' => $edom->prodis->pluck('name')->filter()->join(', '),
+                'course_snapshot' => $edom->mataKuliahs->pluck('name')->filter()->join(', '),
+                'respondent_name' => $request->input('respondent_name'),
+                'student_number' => $request->input('student_number'),
                 'submitted_at' => now(),
             ]);
 
             foreach ($questions as $question) {
-                $categoryName = $question->category?->nama_kategori;
+                $categoryName = $question->category?->category_name;
 
                 if ($this->isEssayQuestion($question)) {
                     EdomAnswer::create([
                         'edom_response_id' => $response->id,
                         'edom_question_id' => $question->id,
-                        'nama_kategori_snapshot' => $categoryName,
-                        'pernyataan_snapshot' => $question->pernyataan,
-                        'jawaban_teks' => $request->input("essays.{$question->id}"),
+                        'category_name_snapshot' => $categoryName,
+                        'statement_snapshot' => $question->statement,
+                        'answer_text' => $request->input("essays.{$question->id}"),
                     ]);
 
                     continue;
@@ -150,12 +150,12 @@ class EdomPublicController extends Controller
                 EdomAnswer::create([
                     'edom_response_id' => $response->id,
                     'edom_question_id' => $question->id,
-                    'nama_kategori_snapshot' => $categoryName,
-                    'pernyataan_snapshot' => $question->pernyataan,
+                    'category_name_snapshot' => $categoryName,
+                    'statement_snapshot' => $question->statement,
                     'edom_option_id' => $option?->id,
                     'option_label_snapshot' => $option?->label,
-                    'option_nilai_snapshot' => $option?->nilai,
-                    'nilai' => $option?->nilai,
+                    'option_score_snapshot' => $option?->score,
+                    'score' => $option?->score,
                 ]);
             }
         });
@@ -172,15 +172,15 @@ class EdomPublicController extends Controller
             'mataKuliahs',
             'categories' => fn ($query) => $query->orderBy('id'),
             'categories.questions' => fn ($query) => $query->orderBy('id'),
-            'options' => fn ($query) => $query->orderBy('urutan')->orderBy('nilai')->orderBy('id'),
+            'options' => fn ($query) => $query->orderBy('sort_order')->orderBy('score')->orderBy('id'),
         ]);
 
         if ($edom->options->isEmpty()) {
             $edom->setRelation(
                 'options',
                 EdomOption::query()
-                    ->orderBy('urutan')
-                    ->orderBy('nilai')
+                    ->orderBy('sort_order')
+                    ->orderBy('score')
                     ->orderBy('id')
                     ->get()
             );
@@ -191,6 +191,6 @@ class EdomPublicController extends Controller
 
     private function isEssayQuestion(EdomQuestion $question): bool
     {
-        return in_array(strtolower((string) $question->tipe_soal), ['essay', 'esai', 'uraian', 'text', 'textarea'], true);
+        return in_array(strtolower((string) $question->question_type), ['essay', 'esai', 'uraian', 'text', 'textarea'], true);
     }
 }

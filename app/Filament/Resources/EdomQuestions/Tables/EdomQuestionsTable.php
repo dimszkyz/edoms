@@ -14,17 +14,17 @@ class EdomQuestionsTable
     {
         return $table
             ->columns([
-                TextColumn::make('category.nama_kategori')
+                TextColumn::make('category.category_name')
                     ->label('Kategori')
                     ->searchable()
                     ->sortable(),
 
-                TextColumn::make('pernyataan')
+                TextColumn::make('statement')
                     ->label('Pernyataan')
                     ->limit(60)
                     ->searchable(),
 
-                TextColumn::make('tipe_soal')
+                TextColumn::make('question_type')
                     ->label('Tipe')
                     ->badge(),
 

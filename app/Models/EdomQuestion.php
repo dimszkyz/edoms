@@ -8,8 +8,8 @@ class EdomQuestion extends Model
 {
     protected $fillable = [
         'category_id',
-        'pernyataan',
-        'tipe_soal',
+        'statement',
+        'question_type',
     ];
 
     public function category()

@@ -19,12 +19,12 @@ class QuestionsRelationManager extends RelationManager
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('pernyataan')
+                Tables\Columns\TextColumn::make('statement')
                     ->label('Pernyataan')
                     ->limit(80)
                     ->searchable(),
 
-                Tables\Columns\TextColumn::make('tipe_soal')
+                Tables\Columns\TextColumn::make('question_type')
                     ->label('Tipe')
                     ->badge(),
 
@@ -37,12 +37,12 @@ class QuestionsRelationManager extends RelationManager
                     ->label('New Question')
                     ->slideOver()
                     ->schema([
-                        Textarea::make('pernyataan')
+                        Textarea::make('statement')
                             ->label('Pernyataan')
                             ->required()
                             ->columnSpanFull(),
 
-                        Select::make('tipe_soal')
+                        Select::make('question_type')
                             ->label('Tipe Soal')
                             ->options([
                                 'multiple_choice' => 'Pilihan Ganda',
@@ -62,12 +62,12 @@ class QuestionsRelationManager extends RelationManager
                     ->label('Edit')
                     ->slideOver()
                     ->schema([
-                        Textarea::make('pernyataan')
+                        Textarea::make('statement')
                             ->label('Pernyataan')
                             ->required()
                             ->columnSpanFull(),
 
-                        Select::make('tipe_soal')
+                        Select::make('question_type')
                             ->label('Tipe Soal')
                             ->options([
                                 'multiple_choice' => 'Pilihan Ganda',

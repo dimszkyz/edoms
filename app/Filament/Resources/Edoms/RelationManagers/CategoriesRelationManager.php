@@ -21,7 +21,7 @@ class CategoriesRelationManager extends RelationManager
     {
         return $schema
             ->components([
-                Forms\Components\TextInput::make('nama_kategori')
+                Forms\Components\TextInput::make('category_name')
                     ->label('Nama Kategori')
                     ->required()
                     ->maxLength(255),
@@ -33,7 +33,7 @@ class CategoriesRelationManager extends RelationManager
         return $table
 
             ->columns([
-                Tables\Columns\TextColumn::make('nama_kategori')
+                Tables\Columns\TextColumn::make('category_name')
                     ->label('Nama Kategori')
                     ->searchable()
                     ->sortable(),
@@ -59,7 +59,6 @@ class CategoriesRelationManager extends RelationManager
                 CreateAction::make()
                     ->slideOver()
                     ->mutateDataUsing(function (array $data): array {
-
                         $data['edom_id'] = $this->ownerRecord->id;
 
                         return $data;

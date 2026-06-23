@@ -192,24 +192,23 @@
         </div>
 
         @if ($edom)
-            {{-- INFORMASI EDOM CARD --}}
             <div class="edom-info-card">
                 <h3 class="edom-info-value" style="margin-bottom: 1rem; font-size: 1.125rem;">Informasi Detail EDOM</h3>
                 <div class="edom-info-grid">
                     <div>
                         <div class="edom-info-label">Nama EDOM</div>
-                        <div class="edom-info-value">{{ $edom->nama_edom }}</div>
+                        <div class="edom-info-value">{{ $edom->edom_name }}</div>
                     </div>
                     <div>
                         <div class="edom-info-label">Program Studi (Prodi)</div>
                         <div class="edom-info-value">
-                            {{ $edom->prodis->pluck('nama')->join(', ') ?: '-' }}
+                            {{ $edom->prodis->pluck('name')->join(', ') ?: '-' }}
                         </div>
                     </div>
                     <div>
                         <div class="edom-info-label">Mata Kuliah</div>
                         <div class="edom-info-value">
-                            {{ $edom->mataKuliahs->pluck('nama')->join(', ') ?: '-' }}
+                            {{ $edom->mataKuliahs->pluck('name')->join(', ') ?: '-' }}
                         </div>
                     </div>
                     <div>
@@ -235,7 +234,6 @@
                 </div>
             </div>
 
-            {{-- TABEL PREVIEW --}}
             <div class="edom-table-wrap">
                 <table class="edom-preview-table">
                     <colgroup>
@@ -253,7 +251,7 @@
 
                             @foreach ($edom->options as $option)
                                 <th style="width:75px">
-                                    {{ $option->label }} 
+                                    {{ $option->label }}
                                 </th>
                             @endforeach
                         </tr>
@@ -263,8 +261,7 @@
                         @foreach ($edom->categories as $category)
                             <tr class="edom-section-row">
                                 <td colspan="{{ $edom->options->count() + 2 }}">
-                                    {{ strtoupper($category->nama_kategori) }}
-                                    {{ strtoupper($category->nama_kategori) }}
+                                    {{ strtoupper($category->category_name) }}
                                 </td>
                             </tr>
 
@@ -275,11 +272,10 @@
                                     </td>
 
                                     <td>
-                                        {{ $question->pernyataan }}
-                                        {{ $question->pernyataan }}
+                                        {{ $question->statement }}
                                     </td>
 
-                                    @if(in_array(strtolower($question->tipe_soal), ['essay', 'esai']))
+                                    @if(in_array(strtolower($question->question_type), ['essay', 'esai']))
                                         <td colspan="{{ $edom->options->count() }}" style="padding: 10px;">
                                             <textarea class="edom-essay-box" placeholder="Jawaban essay mahasiswa akan diisi di sini..." readonly></textarea>
                                         </td>

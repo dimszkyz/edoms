@@ -22,12 +22,10 @@ class PreviewEdom extends Page implements HasForms
 
     protected string $view = 'filament.pages.preview-edom';
 
-    // 1. Mengubah properti menjadi array $formData agar sesuai dengan ->statePath('formData')
-    public ?array $formData = []; 
+    public ?array $formData = [];
 
     public function mount(): void
     {
-        // 2. Langsung isi form dengan ID EDOM terbaru
         $this->form->fill([
             'edom_id' => Edom::query()->latest()->value('id'),
         ]);
@@ -44,19 +42,18 @@ class PreviewEdom extends Page implements HasForms
             ->schema([
                 Forms\Components\Select::make('edom_id')
                     ->label('Pilih EDOM untuk di-preview')
-                    ->options(Edom::pluck('nama_edom', 'id'))
+                    ->options(Edom::pluck('edom_name', 'id'))
                     ->searchable()
-                    ->live(), // Cukup gunakan live() agar otomatis me-refresh halaman saat dipilih
+                    ->live(),
             ])
             ->statePath('formData');
     }
 
     public function getEdom(): ?Edom
     {
-        // 3. Ambil edom_id langsung dari array formData
         $edomId = $this->formData['edom_id'] ?? null;
 
-        if (!$edomId) {
+        if (! $edomId) {
             return null;
         }
 

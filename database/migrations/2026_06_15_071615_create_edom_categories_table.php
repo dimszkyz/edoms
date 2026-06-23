@@ -7,23 +7,20 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     public function up(): void
-{
-    Schema::create('edom_categories', function (Blueprint $table) {
-        $table->id();
+    {
+        Schema::create('edom_categories', function (Blueprint $table) {
+            $table->id();
 
-        $table->foreignId('edom_id')
-            ->constrained('edoms')
-            ->cascadeOnDelete();
+            $table->foreignId('edom_id')
+                ->constrained('edoms')
+                ->cascadeOnDelete();
 
-        $table->string('nama_kategori');
+            $table->string('category_name');
 
-        $table->timestamps();
-    });
-}
+            $table->timestamps();
+        });
+    }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('edom_categories');

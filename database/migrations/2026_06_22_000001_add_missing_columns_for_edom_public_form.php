@@ -8,13 +8,13 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (! Schema::hasColumn('edoms', 'status')) {
+        if (Schema::hasTable('edoms') && ! Schema::hasColumn('edoms', 'status')) {
             Schema::table('edoms', function (Blueprint $table) {
-                $table->string('status')->default('draft')->after('tanggal_dibuat');
+                $table->string('status')->default('draft')->after('created_date');
             });
         }
 
-        if (! Schema::hasColumn('edom_options', 'edom_id')) {
+        if (Schema::hasTable('edom_options') && ! Schema::hasColumn('edom_options', 'edom_id')) {
             Schema::table('edom_options', function (Blueprint $table) {
                 $table->foreignId('edom_id')
                     ->nullable()
@@ -27,6 +27,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Rollback manual jika dibutuhkan: hapus kolom edoms.status dan edom_options.edom_id.
+        // Manual rollback if needed.
     }
 };

@@ -27,12 +27,12 @@ class ResponsesRelationManager extends RelationManager
                 ->latest('submitted_at')
                 ->latest('id'))
             ->columns([
-                TextColumn::make('nama_responden')
+                TextColumn::make('respondent_name')
                     ->label('Nama Mahasiswa')
                     ->placeholder('Anonim')
                     ->searchable(),
 
-                TextColumn::make('nim')
+                TextColumn::make('student_number')
                     ->label('NIM')
                     ->placeholder('-')
                     ->searchable(),
@@ -46,8 +46,8 @@ class ResponsesRelationManager extends RelationManager
                     ->label('Rata-rata Nilai')
                     ->state(function (EdomResponse $record): string {
                         $average = $record->answers
-                            ->whereNotNull('nilai')
-                            ->avg('nilai');
+                            ->whereNotNull('score')
+                            ->avg('score');
 
                         return $average === null ? '-' : number_format((float) $average, 2, ',', '.');
                     })

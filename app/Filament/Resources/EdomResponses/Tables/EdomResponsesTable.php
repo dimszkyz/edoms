@@ -20,30 +20,30 @@ class EdomResponsesTable
                 ->latest('submitted_at')
                 ->latest('id'))
             ->columns([
-                TextColumn::make('nama_edom_snapshot')
+                TextColumn::make('edom_name_snapshot')
                     ->label('EDOM')
-                    ->state(fn (EdomResponse $record): string => $record->nama_edom_snapshot ?: ($record->edom?->nama_edom ?? 'EDOM dihapus'))
+                    ->state(fn (EdomResponse $record): string => $record->edom_name_snapshot ?: ($record->edom?->edom_name ?? 'EDOM dihapus'))
                     ->searchable()
                     ->sortable(),
 
-                TextColumn::make('prodi_snapshot')
+                TextColumn::make('study_program_snapshot')
                     ->label('Prodi')
                     ->placeholder('-')
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->wrap(),
 
-                TextColumn::make('mata_kuliah_snapshot')
+                TextColumn::make('course_snapshot')
                     ->label('Mata Kuliah')
                     ->placeholder('-')
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->wrap(),
 
-                TextColumn::make('nama_responden')
+                TextColumn::make('respondent_name')
                     ->label('Nama Mahasiswa')
                     ->placeholder('Anonim')
                     ->searchable(),
 
-                TextColumn::make('nim')
+                TextColumn::make('student_number')
                     ->label('NIM')
                     ->placeholder('-')
                     ->searchable(),
@@ -57,8 +57,8 @@ class EdomResponsesTable
                     ->label('Rata-rata Nilai')
                     ->state(function (EdomResponse $record): string {
                         $average = $record->answers
-                            ->whereNotNull('nilai')
-                            ->avg('nilai');
+                            ->whereNotNull('score')
+                            ->avg('score');
 
                         return $average === null ? '-' : number_format((float) $average, 2, ',', '.');
                     })
@@ -73,7 +73,7 @@ class EdomResponsesTable
             ->filters([
                 SelectFilter::make('edom')
                     ->label('EDOM Aktif/Tersedia')
-                    ->relationship('edom', 'nama_edom')
+                    ->relationship('edom', 'edom_name')
                     ->searchable()
                     ->preload()
                     ->placeholder('Semua EDOM'),

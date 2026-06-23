@@ -14,12 +14,12 @@ class EdomCategoryForm
             ->components([
                 Select::make('edom_id')
                     ->label('EDOM')
-                    ->relationship('edom', 'nama_edom')
+                    ->relationship('edom', 'edom_name')
                     ->searchable()
                     ->preload()
                     ->required(),
 
-                TextInput::make('nama_kategori')
+                TextInput::make('category_name')
                     ->label('Nama Kategori')
                     ->required()
                     ->maxLength(255),

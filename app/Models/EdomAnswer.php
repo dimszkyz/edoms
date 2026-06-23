@@ -9,13 +9,13 @@ class EdomAnswer extends Model
     protected $fillable = [
         'edom_response_id',
         'edom_question_id',
-        'nama_kategori_snapshot',
-        'pernyataan_snapshot',
+        'category_name_snapshot',
+        'statement_snapshot',
         'edom_option_id',
         'option_label_snapshot',
-        'option_nilai_snapshot',
-        'jawaban_teks',
-        'nilai',
+        'option_score_snapshot',
+        'answer_text',
+        'score',
     ];
 
     public function response()

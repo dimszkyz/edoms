@@ -6,18 +6,25 @@ use Illuminate\Database\Eloquent\Model;
 
 class MataKuliah extends Model
 {
+    protected $table = 'courses';
+
     protected $fillable = [
-        'prodi_id',
-        'nama',
+        'study_program_id',
+        'name',
     ];
 
     public function prodi()
     {
-        return $this->belongsTo(Prodi::class);
+        return $this->belongsTo(Prodi::class, 'study_program_id');
     }
 
     public function edoms()
     {
-        return $this->belongsToMany(Edom::class);
+        return $this->belongsToMany(
+            Edom::class,
+            'edom_courses',
+            'course_id',
+            'edom_id'
+        );
     }
 }

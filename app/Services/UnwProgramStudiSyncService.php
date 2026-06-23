@@ -39,28 +39,28 @@ class UnwProgramStudiSyncService
 
         foreach ($items as $item) {
             $externalId = data_get($item, 'id');
-            $nama = trim((string) data_get($item, 'nama'));
+            $name = trim((string) data_get($item, 'nama'));
 
-            if (blank($externalId) || $nama === '') {
+            if (blank($externalId) || $name === '') {
                 $skipped++;
                 continue;
             }
 
             $attributes = [
-                'nama' => $nama,
+                'name' => $name,
                 'slug' => data_get($item, 'slug'),
                 'page_slug' => data_get($item, 'page_slug'),
-                'jenjang' => data_get($item, 'jenjang'),
-                'jenjang_nama_singkat' => data_get($item, 'jenjang_nama_singkat'),
-                'fakultas_unw_id' => data_get($item, 'unwFakultas.id'),
-                'fakultas_nama' => trim((string) data_get($item, 'unwFakultas.nama')),
-                'fakultas_page_slug' => data_get($item, 'unwFakultas.page_slug'),
+                'degree_level' => data_get($item, 'jenjang'),
+                'degree_short_name' => data_get($item, 'jenjang_nama_singkat'),
+                'unw_faculty_id' => data_get($item, 'unwFakultas.id'),
+                'faculty_name' => trim((string) data_get($item, 'unwFakultas.nama')),
+                'faculty_page_slug' => data_get($item, 'unwFakultas.page_slug'),
                 'api_updated_at' => $this->parseDate(data_get($item, 'updatedAt')),
                 'synced_at' => now(),
             ];
 
             $prodi = Prodi::query()
-                ->where('unw_prodi_id', $externalId)
+                ->where('unw_study_program_id', $externalId)
                 ->first();
 
             if ($prodi) {
@@ -70,7 +70,7 @@ class UnwProgramStudiSyncService
             }
 
             Prodi::query()->create([
-                'unw_prodi_id' => $externalId,
+                'unw_study_program_id' => $externalId,
                 ...$attributes,
             ]);
 

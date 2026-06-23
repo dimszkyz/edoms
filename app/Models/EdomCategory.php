@@ -8,7 +8,7 @@ class EdomCategory extends Model
 {
     protected $fillable = [
         'edom_id',
-        'nama_kategori',
+        'category_name',
     ];
 
     public function edom()
@@ -16,8 +16,8 @@ class EdomCategory extends Model
         return $this->belongsTo(Edom::class);
     }
 
-   public function questions()
-{
-    return $this->hasMany(EdomQuestion::class, 'category_id');
-}
+    public function questions()
+    {
+        return $this->hasMany(EdomQuestion::class, 'category_id');
+    }
 }

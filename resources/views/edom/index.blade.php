@@ -8,7 +8,7 @@
             <section class="hero">
                 <p class="eyebrow">Evaluasi Dosen Oleh Mahasiswa</p>
                 <h1>EDOM Universitas Ngudi Waluyo</h1>
-                
+
 
                 @if (session('success'))
                     <div class="alert success">{{ session('success') }}</div>
@@ -27,10 +27,10 @@
                         @foreach ($activeEdoms as $edom)
                             <article class="card">
                                 <span class="badge badge-active">Aktif</span>
-                                <h2>{{ $edom->nama_edom }}</h2>
+                                <h2>{{ $edom->edom_name }}</h2>
                                 <p class="meta">
-                                    {{ $edom->prodis->pluck('nama')->join(', ') ?: 'Semua Prodi' }}<br>
-                                    {{ $edom->mataKuliahs->pluck('nama')->join(', ') ?: 'Semua Mata Kuliah' }}<br>
+                                    {{ $edom->prodis->pluck('name')->join(', ') ?: 'Semua Prodi' }}<br>
+                                    {{ $edom->mataKuliahs->pluck('name')->join(', ') ?: 'Semua Mata Kuliah' }}<br>
                                     {{ $edom->questions_count }} pernyataan dalam {{ $edom->categories_count }} kategori
                                 </p>
                                 <a class="button" href="{{ route('edom.home', ['edom' => $edom->id]) }}">Isi EDOM</a>
@@ -53,10 +53,10 @@
                         @foreach ($closedEdoms as $edom)
                             <article class="card">
                                 <span class="badge badge-closed">Ditutup</span>
-                                <h2>{{ $edom->nama_edom }}</h2>
+                                <h2>{{ $edom->edom_name }}</h2>
                                 <p class="meta">
-                                    {{ $edom->prodis->pluck('nama')->join(', ') ?: 'Semua Prodi' }}<br>
-                                    {{ $edom->mataKuliahs->pluck('nama')->join(', ') ?: 'Semua Mata Kuliah' }}
+                                    {{ $edom->prodis->pluck('name')->join(', ') ?: 'Semua Prodi' }}<br>
+                                    {{ $edom->mataKuliahs->pluck('name')->join(', ') ?: 'Semua Mata Kuliah' }}
                                 </p>
                                 <span class="button button-muted">Pengisian Ditutup</span>
                             </article>

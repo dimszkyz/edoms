@@ -22,16 +22,16 @@ class AnswersRelationManager extends RelationManager
         return $table
             ->modifyQueryUsing(fn ($query) => $query->with(['question.category', 'option'])->orderBy('id'))
             ->columns([
-                TextColumn::make('nama_kategori_snapshot')
+                TextColumn::make('category_name_snapshot')
                     ->label('Kategori')
-                    ->state(fn (EdomAnswer $record): string => $record->nama_kategori_snapshot ?: ($record->question?->category?->nama_kategori ?? 'Kategori dihapus'))
+                    ->state(fn (EdomAnswer $record): string => $record->category_name_snapshot ?: ($record->question?->category?->category_name ?? 'Kategori dihapus'))
                     ->badge()
                     ->color('primary')
                     ->wrap(),
 
-                TextColumn::make('pernyataan_snapshot')
+                TextColumn::make('statement_snapshot')
                     ->label('Pernyataan')
-                    ->state(fn (EdomAnswer $record): string => $record->pernyataan_snapshot ?: ($record->question?->pernyataan ?? 'Pernyataan dihapus'))
+                    ->state(fn (EdomAnswer $record): string => $record->statement_snapshot ?: ($record->question?->statement ?? 'Pernyataan dihapus'))
                     ->limit(120)
                     ->wrap()
                     ->searchable(),
@@ -45,13 +45,13 @@ class AnswersRelationManager extends RelationManager
                             return $label;
                         }
 
-                        $score = $record->option_nilai_snapshot ?? $record->nilai;
+                        $score = $record->option_score_snapshot ?? $record->score;
 
                         if ($score !== null) {
                             return 'Opsi terhapus (nilai ' . $score . ')';
                         }
 
-                        if (filled($record->jawaban_teks)) {
+                        if (filled($record->answer_text)) {
                             return '-';
                         }
 
@@ -60,14 +60,14 @@ class AnswersRelationManager extends RelationManager
                     ->badge()
                     ->color(fn (EdomAnswer $record): string => ($record->option_label_snapshot || $record->option?->label) ? 'success' : 'gray'),
 
-                TextColumn::make('nilai')
+                TextColumn::make('score')
                     ->label('Nilai')
-                    ->state(fn (EdomAnswer $record): ?int => $record->option_nilai_snapshot ?? $record->nilai)
+                    ->state(fn (EdomAnswer $record): ?int => $record->option_score_snapshot ?? $record->score)
                     ->placeholder('-')
                     ->badge()
                     ->color('success'),
 
-                TextColumn::make('jawaban_teks')
+                TextColumn::make('answer_text')
                     ->label('Jawaban Teks')
                     ->placeholder('-')
                     ->limit(120)

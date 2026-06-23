@@ -7,7 +7,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Filament\Tables\Grouping\Group; // Tambahkan import class Group
+use Filament\Tables\Grouping\Group;
 
 class MataKuliahsTable
 {
@@ -15,12 +15,12 @@ class MataKuliahsTable
     {
         return $table
             ->columns([
-                TextColumn::make('prodi.nama')
+                TextColumn::make('prodi.name')
                     ->label('Prodi')
                     ->searchable()
                     ->sortable(),
 
-                TextColumn::make('nama')
+                TextColumn::make('name')
                     ->label('Mata Kuliah')
                     ->searchable()
                     ->sortable(),
@@ -40,12 +40,11 @@ class MataKuliahsTable
                     DeleteBulkAction::make(),
                 ]),
             ])
-            // Menambahkan fitur pengelompokan berdasarkan relasi Prodi
             ->groups([
-                Group::make('prodi.nama')
+                Group::make('prodi.name')
                     ->label('Program Studi')
-                    ->collapsible(), // Membuat grup bisa di-collapse (buka-tutup)
+                    ->collapsible(),
             ])
-            ->defaultGroup('prodi.nama'); // Otomatis mengelompokkan saat halaman list dibuka
+            ->defaultGroup('prodi.name');
     }
 }

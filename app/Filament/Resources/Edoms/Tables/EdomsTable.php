@@ -15,16 +15,16 @@ class EdomsTable
     {
         return $table
             ->columns([
-                TextColumn::make('nama_edom')
+                TextColumn::make('edom_name')
                     ->label('Nama EDOM')
                     ->searchable(),
 
-                TextColumn::make('prodis.nama')
+                TextColumn::make('prodis.name')
                     ->label('Prodi')
                     ->badge()
                     ->separator(),
 
-                TextColumn::make('mataKuliahs.nama')
+                TextColumn::make('mataKuliahs.name')
                     ->label('Mata Kuliah')
                     ->badge()
                     ->color('primary')
@@ -53,8 +53,8 @@ class EdomsTable
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'draft' => 'gray',
-                        'aktif' => 'success',
-                        'ditutup' => 'danger',
+                        'active' => 'success',
+                        'closed' => 'danger',
                         default => 'gray',
                     }),
 
@@ -67,21 +67,21 @@ class EdomsTable
                     ->label('Status')
                     ->options([
                         'draft' => 'Draft',
-                        'aktif' => 'Aktif',
-                        'ditutup' => 'Ditutup',
+                        'active' => 'Aktif',
+                        'closed' => 'Ditutup',
                     ])
                     ->placeholder('Semua status'),
 
                 SelectFilter::make('prodis')
                     ->label('Prodi')
-                    ->relationship('prodis', 'nama')
+                    ->relationship('prodis', 'name')
                     ->searchable()
                     ->preload()
                     ->placeholder('Semua prodi'),
 
                 SelectFilter::make('mataKuliahs')
                     ->label('Mata Kuliah')
-                    ->relationship('mataKuliahs', 'nama')
+                    ->relationship('mataKuliahs', 'name')
                     ->searchable()
                     ->preload()
                     ->placeholder('Semua mata kuliah'),

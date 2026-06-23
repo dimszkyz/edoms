@@ -11,11 +11,16 @@ return new class extends Migration
         Schema::create('edom_options', function (Blueprint $table) {
             $table->id();
 
+            $table->foreignId('edom_id')
+                ->nullable()
+                ->constrained('edoms')
+                ->cascadeOnDelete();
+
             $table->string('label');
 
-            $table->integer('nilai');
+            $table->integer('score');
 
-            $table->integer('urutan')
+            $table->integer('sort_order')
                 ->default(1);
 
             $table->timestamps();

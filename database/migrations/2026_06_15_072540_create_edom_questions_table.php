@@ -15,9 +15,9 @@ return new class extends Migration
                 ->constrained('edom_categories')
                 ->cascadeOnDelete();
 
-            $table->text('pernyataan');
+            $table->text('statement');
 
-            $table->enum('tipe_soal', [
+            $table->enum('question_type', [
                 'multiple_choice',
                 'essay',
             ]);
@@ -26,9 +26,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('edom_questions');

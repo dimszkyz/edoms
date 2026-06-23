@@ -8,24 +8,28 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('edom_prodi', function (Blueprint $table) {
-
+        Schema::create('edom_study_programs', function (Blueprint $table) {
             $table->id();
 
             $table->foreignId('edom_id')
-                ->constrained()
+                ->constrained('edoms')
                 ->cascadeOnDelete();
 
-            $table->foreignId('prodi_id')
-                ->constrained()
+            $table->foreignId('study_program_id')
+                ->constrained('study_programs')
                 ->cascadeOnDelete();
 
             $table->timestamps();
+
+            $table->unique([
+                'edom_id',
+                'study_program_id',
+            ]);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('edom_prodi');
+        Schema::dropIfExists('edom_study_programs');
     }
 };

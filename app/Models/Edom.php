@@ -9,19 +9,29 @@ use App\Models\EdomQuestion;
 class Edom extends Model
 {
     protected $fillable = [
-        'nama_edom',
-        'tanggal_dibuat',
+        'edom_name',
+        'created_date',
         'status',
     ];
 
     public function prodis()
     {
-        return $this->belongsToMany(Prodi::class);
+        return $this->belongsToMany(
+            Prodi::class,
+            'edom_study_programs',
+            'edom_id',
+            'study_program_id'
+        )->withTimestamps();
     }
 
     public function mataKuliahs()
     {
-        return $this->belongsToMany(MataKuliah::class);
+        return $this->belongsToMany(
+            MataKuliah::class,
+            'edom_courses',
+            'edom_id',
+            'course_id'
+        );
     }
 
     public function categories()
@@ -46,12 +56,12 @@ class Edom extends Model
 
     public function isActive(): bool
     {
-        return $this->status === 'aktif';
+        return $this->status === 'active';
     }
 
     public function isClosed(): bool
     {
-        return $this->status === 'ditutup';
+        return $this->status === 'closed';
     }
 
     public function options()

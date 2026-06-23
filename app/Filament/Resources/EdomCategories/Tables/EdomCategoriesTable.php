@@ -14,12 +14,12 @@ class EdomCategoriesTable
     {
         return $table
             ->columns([
-                TextColumn::make('edom.nama_edom')
+                TextColumn::make('edom.edom_name')
                     ->label('EDOM')
                     ->searchable()
                     ->sortable(),
 
-                TextColumn::make('nama_kategori')
+                TextColumn::make('category_name')
                     ->label('Kategori')
                     ->searchable()
                     ->sortable(),

@@ -11,9 +11,12 @@ return new class extends Migration
         if (! Schema::hasTable('edom_responses')) {
             Schema::create('edom_responses', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('edom_id')->constrained('edoms')->cascadeOnDelete();
-                $table->string('nama_responden')->nullable();
-                $table->string('nim')->nullable();
+                $table->foreignId('edom_id')->nullable()->constrained('edoms')->nullOnDelete();
+                $table->string('edom_name_snapshot')->nullable();
+                $table->text('study_program_snapshot')->nullable();
+                $table->text('course_snapshot')->nullable();
+                $table->string('respondent_name')->nullable();
+                $table->string('student_number')->nullable();
                 $table->timestamp('submitted_at')->nullable();
                 $table->timestamps();
             });
@@ -23,10 +26,14 @@ return new class extends Migration
             Schema::create('edom_answers', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('edom_response_id')->constrained('edom_responses')->cascadeOnDelete();
-                $table->foreignId('edom_question_id')->constrained('edom_questions')->cascadeOnDelete();
+                $table->foreignId('edom_question_id')->nullable()->constrained('edom_questions')->nullOnDelete();
+                $table->string('category_name_snapshot')->nullable();
+                $table->text('statement_snapshot')->nullable();
                 $table->foreignId('edom_option_id')->nullable()->constrained('edom_options')->nullOnDelete();
-                $table->text('jawaban_teks')->nullable();
-                $table->integer('nilai')->nullable();
+                $table->string('option_label_snapshot')->nullable();
+                $table->integer('option_score_snapshot')->nullable();
+                $table->text('answer_text')->nullable();
+                $table->integer('score')->nullable();
                 $table->timestamps();
             });
         }
@@ -34,6 +41,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Rollback manual jika dibutuhkan: hapus tabel edom_answers lalu edom_responses.
+        // Manual rollback if needed: drop edom_answers then edom_responses.
     }
 };

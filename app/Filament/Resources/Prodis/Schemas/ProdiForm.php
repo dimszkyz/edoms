@@ -11,7 +11,8 @@ class ProdiForm
     {
         return $schema
             ->components([
-                TextInput::make('nama')
+                TextInput::make('name')
+                    ->label('Nama Prodi')
                     ->required(),
             ]);
     }

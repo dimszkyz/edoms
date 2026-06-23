@@ -12,25 +12,25 @@ class ProdisTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->defaultSort('nama')
+            ->defaultSort('name')
             ->columns([
-                TextColumn::make('unw_prodi_id')
+                TextColumn::make('unw_study_program_id')
                     ->label('ID API')
                     ->sortable()
                     ->toggleable(),
 
-                TextColumn::make('nama')
+                TextColumn::make('name')
                     ->label('Nama Prodi')
                     ->searchable()
                     ->sortable(),
 
-                TextColumn::make('jenjang_nama_singkat')
+                TextColumn::make('degree_short_name')
                     ->label('Jenjang')
                     ->badge()
                     ->placeholder('-')
                     ->sortable(),
 
-                TextColumn::make('fakultas_nama')
+                TextColumn::make('faculty_name')
                     ->label('Fakultas')
                     ->placeholder('-')
                     ->searchable()
@@ -54,23 +54,23 @@ class ProdisTable
                     ->sortable(),
             ])
             ->filters([
-                SelectFilter::make('jenjang_nama_singkat')
+                SelectFilter::make('degree_short_name')
                     ->label('Jenjang')
                     ->options(fn (): array => Prodi::query()
-                        ->whereNotNull('jenjang_nama_singkat')
+                        ->whereNotNull('degree_short_name')
                         ->distinct()
-                        ->orderBy('jenjang_nama_singkat')
-                        ->pluck('jenjang_nama_singkat', 'jenjang_nama_singkat')
+                        ->orderBy('degree_short_name')
+                        ->pluck('degree_short_name', 'degree_short_name')
                         ->all())
                     ->placeholder('Semua jenjang'),
 
-                SelectFilter::make('fakultas_nama')
+                SelectFilter::make('faculty_name')
                     ->label('Fakultas')
                     ->options(fn (): array => Prodi::query()
-                        ->whereNotNull('fakultas_nama')
+                        ->whereNotNull('faculty_name')
                         ->distinct()
-                        ->orderBy('fakultas_nama')
-                        ->pluck('fakultas_nama', 'fakultas_nama')
+                        ->orderBy('faculty_name')
+                        ->pluck('faculty_name', 'faculty_name')
                         ->all())
                     ->placeholder('Semua fakultas'),
             ])

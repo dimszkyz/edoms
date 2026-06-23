@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', $edom->nama_edom . ' - EDOM Universitas Ngudi Waluyo')
+@section('title', $edom->edom_name . ' - EDOM Universitas Ngudi Waluyo')
 
 @section('content')
     @php
@@ -72,7 +72,7 @@
                             <div class="edom-scale-list" aria-label="Skala penilaian EDOM">
                                 @foreach ($options as $option)
                                     @php
-                                        $scaleValue = $option->nilai ?: $loop->iteration;
+                                        $scaleValue = $option->score ?: $loop->iteration;
                                         $scaleLabel = ucwords(strtolower((string) $option->label));
                                         $scaleClass = (($loop->index % 6) + 1);
                                     @endphp
@@ -122,16 +122,16 @@
                                 @forelse ($edom->categories as $categoryIndex => $category)
                                     <tr class="edom-category-row">
                                         <td colspan="{{ $options->count() + 2 }}">
-                                            {{ strtoupper($formatCategoryTitle($category->nama_kategori, $categoryIndex)) }}
+                                            {{ strtoupper($formatCategoryTitle($category->category_name, $categoryIndex)) }}
                                         </td>
                                     </tr>
 
                                     @forelse ($category->questions as $question)
                                         <tr>
                                             <td class="edom-question-number">{{ $questionNumber++ }}</td>
-                                            <td class="edom-question-text">{{ $question->pernyataan }}</td>
+                                            <td class="edom-question-text">{{ $question->statement }}</td>
 
-                                            @if (in_array(strtolower((string) $question->tipe_soal), ['essay', 'esai', 'uraian', 'text', 'textarea'], true))
+                                            @if (in_array(strtolower((string) $question->question_type), ['essay', 'esai', 'uraian', 'text', 'textarea'], true))
                                                 <td colspan="{{ max($options->count(), 1) }}">
                                                     <textarea
                                                         name="essays[{{ $question->id }}]"

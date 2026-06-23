@@ -8,24 +8,21 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('mata_kuliahs', function (Blueprint $table) {
+        Schema::create('courses', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('prodi_id')
-                ->constrained('prodis')
+            $table->foreignId('study_program_id')
+                ->constrained('study_programs')
                 ->cascadeOnDelete();
 
-            $table->string('nama');
+            $table->string('name');
 
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('mata_kuliahs');
+        Schema::dropIfExists('courses');
     }
 };

@@ -15,23 +15,23 @@ class EdomResponseInfolist
             ->components([
                 Section::make('Informasi Pengisian')
                     ->schema([
-                        TextEntry::make('nama_edom_snapshot')
+                        TextEntry::make('edom_name_snapshot')
                             ->label('EDOM')
-                            ->state(fn (EdomResponse $record): string => $record->nama_edom_snapshot ?: ($record->edom?->nama_edom ?? 'EDOM dihapus')),
+                            ->state(fn (EdomResponse $record): string => $record->edom_name_snapshot ?: ($record->edom?->edom_name ?? 'EDOM dihapus')),
 
-                        TextEntry::make('prodi_snapshot')
+                        TextEntry::make('study_program_snapshot')
                             ->label('Prodi')
                             ->placeholder('-'),
 
-                        TextEntry::make('mata_kuliah_snapshot')
+                        TextEntry::make('course_snapshot')
                             ->label('Mata Kuliah')
                             ->placeholder('-'),
 
-                        TextEntry::make('nama_responden')
+                        TextEntry::make('respondent_name')
                             ->label('Nama Mahasiswa')
                             ->placeholder('Anonim'),
 
-                        TextEntry::make('nim')
+                        TextEntry::make('student_number')
                             ->label('NIM')
                             ->placeholder('-'),
 
@@ -48,8 +48,8 @@ class EdomResponseInfolist
                             ->label('Rata-rata Nilai')
                             ->state(function (EdomResponse $record): string {
                                 $average = $record->answers()
-                                    ->whereNotNull('nilai')
-                                    ->avg('nilai');
+                                    ->whereNotNull('score')
+                                    ->avg('score');
 
                                 return $average === null ? '-' : number_format((float) $average, 2, ',', '.');
                             })

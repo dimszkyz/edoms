@@ -8,11 +8,11 @@ class EdomResponse extends Model
 {
     protected $fillable = [
         'edom_id',
-        'nama_edom_snapshot',
-        'prodi_snapshot',
-        'mata_kuliah_snapshot',
-        'nama_responden',
-        'nim',
+        'edom_name_snapshot',
+        'study_program_snapshot',
+        'course_snapshot',
+        'respondent_name',
+        'student_number',
         'submitted_at',
     ];
 

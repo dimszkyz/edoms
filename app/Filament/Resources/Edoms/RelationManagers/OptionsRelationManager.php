@@ -23,7 +23,8 @@ class OptionsRelationManager extends RelationManager
                     ->label('Opsi Jawaban')
                     ->required(),
 
-                TextInput::make('nilai')
+                TextInput::make('score')
+                    ->label('Nilai')
                     ->numeric()
                     ->required(),
             ]);
@@ -33,24 +34,25 @@ class OptionsRelationManager extends RelationManager
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('urutan')
+                Tables\Columns\TextColumn::make('sort_order')
+                    ->label('Urutan')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('label')
                     ->label('Opsi Jawaban'),
 
-                Tables\Columns\TextColumn::make('nilai'),
+                Tables\Columns\TextColumn::make('score')
+                    ->label('Nilai'),
             ])
 
             ->headerActions([
                 CreateAction::make()
                     ->mutateDataUsing(function (array $data): array {
-
-                        $lastUrutan = $this->ownerRecord
+                        $lastSortOrder = $this->ownerRecord
                             ->options()
-                            ->max('urutan');
+                            ->max('sort_order');
 
-                        $data['urutan'] = ($lastUrutan ?? 0) + 1;
+                        $data['sort_order'] = ($lastSortOrder ?? 0) + 1;
 
                         $data['edom_id'] = $this->ownerRecord->id;
 

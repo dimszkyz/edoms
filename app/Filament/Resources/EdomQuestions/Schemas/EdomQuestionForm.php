@@ -16,12 +16,12 @@ class EdomQuestionForm
 
                 Hidden::make('category_id'),
 
-                Textarea::make('pernyataan')
+                Textarea::make('statement')
                     ->label('Pernyataan')
                     ->required()
                     ->columnSpanFull(),
 
-                Select::make('tipe_soal')
+                Select::make('question_type')
                     ->label('Tipe Soal')
                     ->options([
                         'multiple_choice' => 'Pilihan Ganda',

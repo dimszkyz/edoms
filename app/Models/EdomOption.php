@@ -9,8 +9,8 @@ class EdomOption extends Model
     protected $fillable = [
         'edom_id',
         'label',
-        'nilai',
-        'urutan',
+        'score',
+        'sort_order',
     ];
 
     public function edom()

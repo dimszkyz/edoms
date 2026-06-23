@@ -15,13 +15,13 @@ class EdomForm
     {
         return $schema
             ->components([
-                TextInput::make('nama_edom')
+                TextInput::make('edom_name')
                     ->label('Nama EDOM')
                     ->required()
                     ->maxLength(255)
                     ->disabled(fn ($record) => $record && ! $record->isDraft()),
 
-                DatePicker::make('tanggal_dibuat')
+                DatePicker::make('created_date')
                     ->label('Tanggal Dibuat')
                     ->default(now())
                     ->required()
@@ -29,7 +29,7 @@ class EdomForm
 
                 Select::make('prodis')
                     ->label('Prodi')
-                    ->relationship('prodis', 'nama')
+                    ->relationship('prodis', 'name')
                     ->getOptionLabelFromRecordUsing(fn (Prodi $record): string => $record->display_name)
                     ->multiple()
                     ->searchable()
@@ -44,7 +44,7 @@ class EdomForm
                         }
 
                         if (! empty($selectedMataKuliahs)) {
-                            $validMataKuliahs = MataKuliah::whereIn('prodi_id', $state)
+                            $validMataKuliahs = MataKuliah::whereIn('study_program_id', $state)
                                 ->whereIn('id', $selectedMataKuliahs)
                                 ->pluck('id')
                                 ->toArray();
@@ -58,7 +58,7 @@ class EdomForm
                     ->label('Mata Kuliah')
                     ->relationship(
                         name: 'mataKuliahs',
-                        titleAttribute: 'nama',
+                        titleAttribute: 'name',
                         modifyQueryUsing: function ($query, $get) {
                             $prodis = $get('prodis');
 
@@ -67,7 +67,7 @@ class EdomForm
                                 return;
                             }
 
-                            $query->whereIn('prodi_id', $prodis);
+                            $query->whereIn('study_program_id', $prodis);
                         }
                     )
                     ->multiple()
@@ -79,10 +79,10 @@ class EdomForm
                     ->label('Status')
                     ->options([
                         'draft' => 'Draft',
-                        'aktif' => 'Aktif',
-                        'ditutup' => 'Ditutup',
+                        'active' => 'Aktif',
+                        'closed' => 'Ditutup',
                     ])
-                    ->disabled(fn ($record) => $record && $record->status === 'ditutup')
+                    ->disabled(fn ($record) => $record && $record->status === 'closed')
                     ->required(),
             ]);
     }

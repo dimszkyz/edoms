@@ -33,7 +33,7 @@ class EdomResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedAcademicCap;
 
-    protected static ?string $recordTitleAttribute = 'nama_edom';
+    protected static ?string $recordTitleAttribute = 'edom_name';
 
     public static function form(Schema $schema): Schema
     {
