@@ -6,14 +6,14 @@ use App\Models\EdomPeriod;
 use App\Models\EdomQuestion;
 use App\Models\EdomResponse;
 use App\Models\EdomResponseDetail;
-use App\Models\SettingEdom;
+use App\Models\EdomSettings;
 use App\Services\Siakad\UnwApiSiakad;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Throwable;
 
@@ -22,53 +22,91 @@ class EdomPublicController extends Controller
     public function index(Request $request): View
     {
         $student = session('edom_student');
+        $studentSemester = null;
+        $studentSemesterFetchError = null;
         $studentSections = [];
         $studentFetchError = null;
-        $studentProgramStudiIds = [];
+        $studentProfile = null;
+        $studentProfileFetchError = null;
 
         if ($student) {
             try {
+                $studentSemester = $this->fetchStudentSemester($student);
+
+                if ($studentSemester === null) {
+                    $studentSemesterFetchError = 'Data semester tidak ditemukan pada SIAKAD.';
+                }
+            } catch (Throwable $exception) {
+                report($exception);
+                $studentSemesterFetchError = 'Gagal mengambil data semester dari SIAKAD.';
+            }
+
+            try {
                 $studentSections = $this->fetchStudentSections($student);
-                $studentProgramStudiIds = $this->programStudiIdsFromSections($studentSections);
             } catch (Throwable $exception) {
                 report($exception);
                 $studentFetchError = 'Gagal mengambil data KRS dari SIAKAD. Periksa konfigurasi API SIAKAD atau coba beberapa saat lagi.';
             }
-        }
 
-        $activeQuery = SettingEdom::query()
-            ->with(['programStudis'])
-            ->withCount(['categories', 'questions'])
-            ->where('status', 'active')
-            ->latest('id');
+            try {
+                $studentProfile = $this->fetchStudentProfile($student);
 
-        if ($student && $studentProgramStudiIds !== []) {
-            $this->scopeSettingEdomsForProgramStudi($activeQuery, $studentProgramStudiIds);
-        }
-
-        $activeEdoms = $activeQuery->get();
-        $selectedEdomId = (int) $request->query('edom');
-
-        if ($selectedEdomId > 0) {
-            $selectedEdom = $activeEdoms->firstWhere('id', $selectedEdomId);
-
-            if ($selectedEdom) {
-                return $this->show($selectedEdom);
+                if ($studentProfile === null) {
+                    $studentProfileFetchError = 'Data mahasiswa tidak ditemukan pada SIAKAD.';
+                }
+            } catch (Throwable $exception) {
+                report($exception);
+                $studentProfileFetchError = 'Gagal mengambil data mahasiswa dari SIAKAD.';
             }
         }
 
-        if (! $studentFetchError && $activeEdoms->count() === 1) {
-            return $this->show($activeEdoms->first());
+        $activeEdoms = EdomSettings::query()
+            ->with(['programStudis'])
+            ->withCount(['categories', 'questions'])
+            ->where('status', 'active')
+            ->latest('id')
+            ->get();
+
+        $studentEdomSections = collect();
+
+        if ($student && ! $studentFetchError) {
+            $completedSectionKeys = $this->completedSectionKeys(
+                $student,
+                $activeEdoms->pluck('id')->map(fn ($id) => (int) $id)->all()
+            );
+
+            $studentEdomSections = $activeEdoms
+                ->map(function (EdomSettings $edom) use ($studentSections, $completedSectionKeys): array {
+                    $sections = collect($this->sectionsForEdomSettings($edom, $studentSections))
+                        ->map(function (array $section) use ($edom, $completedSectionKeys): array {
+                            $completionKey = $this->sectionCompletionKey($edom->id, $section);
+
+                            return [
+                                'section' => $section,
+                                'section_key' => $this->sectionRouteKey($section),
+                                'completed' => $completionKey !== null
+                                    && isset($completedSectionKeys[$completionKey]),
+                            ];
+                        })
+                        ->values();
+
+                    return [
+                        'edom' => $edom,
+                        'sections' => $sections,
+                    ];
+                })
+                ->filter(fn (array $group): bool => $group['sections']->isNotEmpty())
+                ->values();
         }
 
-        $closedEdoms = SettingEdom::query()
+        $closedEdoms = EdomSettings::query()
             ->with(['programStudis'])
             ->where('status', 'closed')
             ->latest('id')
             ->limit(6)
             ->get();
 
-        $draftCount = SettingEdom::query()
+        $draftCount = EdomSettings::query()
             ->where('status', 'draft')
             ->count();
 
@@ -77,7 +115,12 @@ class EdomPublicController extends Controller
             'closedEdoms' => $closedEdoms,
             'draftCount' => $draftCount,
             'student' => $student,
+            'studentSemester' => $studentSemester,
+            'studentSemesterFetchError' => $studentSemesterFetchError,
+            'studentProfile' => $studentProfile,
+            'studentProfileFetchError' => $studentProfileFetchError,
             'studentSections' => $studentSections,
+            'studentEdomSections' => $studentEdomSections,
             'studentFetchError' => $studentFetchError,
         ]);
     }
@@ -98,9 +141,9 @@ class EdomPublicController extends Controller
         return redirect()->route('edom.home');
     }
 
-    public function show(mixed $edom): View
+    public function show(Request $request, mixed $edom): View
     {
-        $edom = $this->prepareSettingEdom($edom);
+        $edom = $this->prepareEdomSettings($edom);
 
         if (! $edom->isActive()) {
             return view('edom.status', [
@@ -115,26 +158,47 @@ class EdomPublicController extends Controller
         $student = session('edom_student');
         $sections = [];
 
-        if ($student) {
-            try {
-                $sections = $this->sectionsForSettingEdom($edom, $this->fetchStudentSections($student));
-            } catch (Throwable $exception) {
-                report($exception);
+        if (! is_array($student)) {
+            return view('edom.status', [
+                'edom' => $edom,
+                'statusTitle' => 'Sesi SIAKAD tidak ditemukan',
+                'statusMessage' => 'Buka pengisian EDOM melalui tombol Isi EDOM pada halaman SIAKAD.',
+            ]);
+        }
 
-                return view('edom.status', [
-                    'edom' => $edom,
-                    'statusTitle' => 'Data KRS tidak dapat dimuat',
-                    'statusMessage' => 'Aplikasi EDOM gagal mengambil daftar mata kuliah dari SIAKAD. Periksa konfigurasi API atau coba beberapa saat lagi.',
-                ]);
-            }
+        try {
+            $sections = $this->sectionsForEdomSettings($edom, $this->fetchStudentSections($student));
+        } catch (Throwable $exception) {
+            report($exception);
 
-            if ($sections === []) {
-                return view('edom.status', [
-                    'edom' => $edom,
-                    'statusTitle' => 'Tidak ada mata kuliah untuk EDOM ini',
-                    'statusMessage' => 'Data KRS dari SIAKAD tidak memiliki mata kuliah yang cocok dengan setting EDOM ini.',
-                ]);
-            }
+            return view('edom.status', [
+                'edom' => $edom,
+                'statusTitle' => 'Data KRS tidak dapat dimuat',
+                'statusMessage' => 'Aplikasi EDOM gagal mengambil daftar mata kuliah dari SIAKAD. Periksa konfigurasi API atau coba beberapa saat lagi.',
+            ]);
+        }
+
+        $selectedSectionKey = trim((string) $request->query('section', ''));
+
+        if ($selectedSectionKey === '') {
+            return view('edom.status', [
+                'edom' => $edom,
+                'statusTitle' => 'Pilih mata kuliah dari daftar KRS',
+                'statusMessage' => 'Kembali ke halaman EDOM, lalu pilih satu mata kuliah yang akan dievaluasi.',
+            ]);
+        }
+
+        $sections = collect($sections)
+            ->filter(fn (array $section): bool => $this->sectionRouteKey($section) === $selectedSectionKey)
+            ->values()
+            ->all();
+
+        if ($sections === []) {
+            return view('edom.status', [
+                'edom' => $edom,
+                'statusTitle' => 'Mata kuliah tidak ditemukan',
+                'statusMessage' => 'Mata kuliah yang dipilih tidak ada pada KRS terbaru atau tidak cocok dengan EdomSettings ini.',
+            ]);
         }
 
         return view('edom.show', compact('edom', 'student', 'sections'));
@@ -147,17 +211,19 @@ class EdomPublicController extends Controller
 
     public function submit(Request $request, mixed $edom): RedirectResponse
     {
-        $edom = $this->prepareSettingEdom($edom);
+        $edom = $this->prepareEdomSettings($edom);
 
         if (! $edom->isActive()) {
             return redirect()->route('edom.home')->with('error', 'EDOM tidak sedang aktif.');
         }
 
-        if (session('edom_student') && $request->has('sections')) {
-            return $this->submitStudentSections($request, $edom);
+        if (! is_array(session('edom_student'))) {
+            return redirect()
+                ->route('edom.home')
+                ->with('error', 'Pengisian EDOM harus dibuka melalui SIAKAD.');
         }
 
-        return $this->submitLegacySingleForm($request, $edom);
+        return $this->submitStudentSections($request, $edom);
     }
 
     private function submitStudentSections(Request $request, Model $edom): RedirectResponse
@@ -165,9 +231,28 @@ class EdomPublicController extends Controller
         $student = session('edom_student');
         $questions = $edom->categories->flatMap(fn ($category) => $category->questions);
         $optionIds = $edom->questionOptions->pluck('id')->map(fn ($id) => (string) $id)->values()->all();
-        $submittedSections = $request->input('sections', []);
 
-        $rules = ['sections' => ['required', 'array', 'min:1']];
+        $request->validate([
+            'sections' => ['required', 'array', 'size:1'],
+        ]);
+
+        try {
+            $currentSections = $this->fetchStudentSections($student);
+            $settingSections = $this->sectionsForEdomSettings($edom, $currentSections);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Jawaban belum disimpan karena data KRS terbaru tidak dapat diverifikasi.');
+        }
+
+        $submittedSections = $this->resolveSubmittedSections(
+            $request->input('sections', []),
+            $settingSections
+        );
+
+        $rules = [];
 
         foreach ($submittedSections as $sectionKey => $section) {
             foreach ($questions as $question) {
@@ -182,17 +267,16 @@ class EdomPublicController extends Controller
         $request->validate($rules);
 
         DB::transaction(function () use ($request, $edom, $questions, $submittedSections, $student) {
-            foreach ($submittedSections as $sectionKey => $section) {
-                $section = is_array($section) ? $section : [];
-                $period = $this->firstOrCreatePeriod($student);
+            $period = $this->firstOrCreatePeriod($student);
 
+            foreach ($submittedSections as $sectionKey => $section) {
                 $response = EdomResponse::updateOrCreate(
                     [
                         'edom_period_id' => $period->id,
                         'edom_setting_id' => $edom->id,
                         'siakad_idmahasiswa' => (string) $student['siakad_idmahasiswa'],
                         'siakad_idmatakuliah' => $this->nullableInteger($section['idmatakuliah'] ?? null),
-                        'siakad_idtawarmatakuliahdetail' => $this->nullableInteger($section['idtawarmatakuliahdetail'] ?? null),
+                        'siakad_idtawarmatakuliahdetail' => $this->persistedSectionDetailId($section),
                     ],
                     [
                         'submitted_at' => now(),
@@ -234,7 +318,7 @@ class EdomPublicController extends Controller
         try {
             $currentSections = $this->fetchStudentSections($student);
 
-            if ($this->studentHasCompletedAllSections($student, $currentSections)) {
+            if ($this->studentHasCompletedAllApplicableEdoms($student, $currentSections)) {
                 app(UnwApiSiakad::class)->complete(
                     $student['siakad_idmahasiswa'],
                     $student['siakad_idtahunajaran'],
@@ -251,57 +335,12 @@ class EdomPublicController extends Controller
                 ->with('error', 'Jawaban tersimpan, tetapi status selesai belum dapat dikirim ke SIAKAD.');
         }
 
-        return redirect()->route('edom.home')->with('success', 'Jawaban EDOM berhasil disimpan.');
+        return redirect()->route('edom.home')->with('success', 'Jawaban EDOM untuk mata kuliah berhasil disimpan.');
     }
 
-    private function submitLegacySingleForm(Request $request, Model $edom): RedirectResponse
+    private function prepareEdomSettings(mixed $edom): Model
     {
-        $questions = $edom->categories->flatMap(fn ($category) => $category->questions);
-        $optionIds = $edom->questionOptions->pluck('id')->map(fn ($id) => (string) $id)->values()->all();
-
-        $rules = [];
-
-        foreach ($questions as $question) {
-            if ($this->isTextQuestion($question)) {
-                $rules["essays.{$question->id}"] = ['nullable', 'string', 'max:5000'];
-            } else {
-                $rules["answers.{$question->id}"] = ['required', Rule::in($optionIds)];
-            }
-        }
-
-        $request->validate($rules);
-
-        DB::transaction(function () use ($request, $edom, $questions) {
-            $response = EdomResponse::create([
-                'edom_setting_id' => $edom->id,
-                'submitted_at' => now(),
-            ]);
-
-            foreach ($questions as $question) {
-                if ($this->isTextQuestion($question)) {
-                    EdomResponseDetail::create([
-                        'edom_response_id' => $response->id,
-                        'edom_question_id' => $question->id,
-                        'answer_text' => $request->input("essays.{$question->id}"),
-                    ]);
-
-                    continue;
-                }
-
-                EdomResponseDetail::create([
-                    'edom_response_id' => $response->id,
-                    'edom_question_id' => $question->id,
-                    'edom_option_id' => (int) $request->input("answers.{$question->id}"),
-                ]);
-            }
-        });
-
-        return redirect()->route('edom.home')->with('success', 'Jawaban EDOM berhasil dikirim.');
-    }
-
-    private function prepareSettingEdom(mixed $edom): Model
-    {
-        $edom = $edom instanceof Model ? $edom : SettingEdom::query()->findOrFail($edom);
+        $edom = $edom instanceof Model ? $edom : EdomSettings::query()->findOrFail($edom);
 
         $edom->load([
             'programStudis',
@@ -324,63 +363,253 @@ class EdomPublicController extends Controller
         return collect($sections)->filter(fn ($section) => is_array($section))->values()->all();
     }
 
-    private function programStudiIdsFromSections(array $sections): array
+    private function fetchStudentSemester(array $student): ?array
     {
-        return collect($sections)
-            ->pluck('id_unw_program_studi')
-            ->map(fn ($id) => (int) $id)
-            ->filter(fn (int $id) => $id > 0)
-            ->unique()
-            ->values()
-            ->all();
-    }
+        $semesterId = (string) $student['siakad_idsemester'];
+        $semesters = app(UnwApiSiakad::class)->semester();
 
-    private function scopeSettingEdomsForProgramStudi(Builder $query, array $programStudiIds): void
-    {
-        $query->where(function (Builder $query) use ($programStudiIds) {
-            $query->whereDoesntHave('programStudis')
-                ->orWhereHas('programStudis', function (Builder $query) use ($programStudiIds) {
-                    $query->whereIn('program_studi.id_unw_program_studi', $programStudiIds);
-                });
+        $semester = collect($semesters)->first(function (mixed $semester) use ($semesterId): bool {
+            return is_array($semester)
+                && (string) ($semester['id'] ?? '') === $semesterId;
         });
+
+        return is_array($semester) ? $semester : null;
     }
 
-    private function sectionsForSettingEdom(Model $edom, array $sections): array
+    private function fetchStudentProfile(array $student): ?array
     {
-        $settingProgramStudiIds = $edom->programStudis
-            ->pluck('id_unw_program_studi')
-            ->map(fn ($id) => (int) $id)
-            ->filter(fn (int $id) => $id > 0)
-            ->values()
-            ->all();
+        $studentId = (string) $student['siakad_idmahasiswa'];
+        $profiles = app(UnwApiSiakad::class)->mahasiswa([$studentId]);
 
-        if ($settingProgramStudiIds === []) {
-            return array_values($sections);
+        $profile = collect($profiles)->first(function (mixed $profile) use ($studentId): bool {
+            return is_array($profile)
+                && (string) ($profile['siakad_idmahasiswa'] ?? '') === $studentId;
+        });
+
+        return is_array($profile) ? $profile : null;
+    }
+
+    private function sectionsForEdomSettings(Model $edom, array $sections): array
+    {
+        return array_values($sections);
+    }
+
+    private function resolveSubmittedSections(array $submittedSections, array $authoritativeSections): array
+    {
+        $authoritativeBySectionKey = collect($authoritativeSections)
+            ->filter(function (array $section): bool {
+                return $this->sectionRouteKey($section) !== null
+                    && $this->nullableInteger($section['idmatakuliah'] ?? null) !== null;
+            })
+            ->keyBy(fn (array $section): string => (string) $this->sectionRouteKey($section));
+
+        if (
+            $authoritativeBySectionKey->count() !== count($authoritativeSections)
+            || count($submittedSections) !== 1
+        ) {
+            $this->throwInvalidSections();
         }
 
-        return collect($sections)
-            ->filter(fn (array $section) => in_array((int) ($section['id_unw_program_studi'] ?? 0), $settingProgramStudiIds, true))
-            ->values()
+        $resolvedSections = [];
+        $seenSectionKeys = [];
+
+        foreach ($submittedSections as $sectionKey => $submittedSection) {
+            if (
+                ! is_string($sectionKey)
+                || ! preg_match('/^s_\d+_[A-Za-z0-9_-]+$/', $sectionKey)
+                || ! is_array($submittedSection)
+            ) {
+                $this->throwInvalidSections();
+            }
+
+            $submittedRouteKey = $this->sectionRouteKey($submittedSection);
+            $courseId = $this->nullableInteger($submittedSection['idmatakuliah'] ?? null);
+            $authoritativeSection = $submittedRouteKey === null
+                ? null
+                : $authoritativeBySectionKey->get($submittedRouteKey);
+
+            if (
+                ! is_array($authoritativeSection)
+                || $courseId === null
+                || $courseId !== $this->nullableInteger($authoritativeSection['idmatakuliah'] ?? null)
+                || in_array($submittedRouteKey, $seenSectionKeys, true)
+            ) {
+                $this->throwInvalidSections();
+            }
+
+            $seenSectionKeys[] = $submittedRouteKey;
+            $resolvedSections[$sectionKey] = $authoritativeSection;
+        }
+
+        return $resolvedSections;
+    }
+
+    private function throwInvalidSections(): never
+    {
+        throw ValidationException::withMessages([
+            'sections' => 'Daftar mata kuliah berubah atau tidak sesuai dengan KRS terbaru. Muat ulang halaman lalu coba lagi.',
+        ]);
+    }
+
+    private function completedSectionKeys(array $student, array $edomSettingIds): array
+    {
+        if ($edomSettingIds === []) {
+            return [];
+        }
+
+        $period = EdomPeriod::query()
+            ->where('year', (int) $student['siakad_idtahunajaran'])
+            ->where('siakad_idsemester', (int) $student['siakad_idsemester'])
+            ->first();
+
+        if (! $period) {
+            return [];
+        }
+
+        return EdomResponse::query()
+            ->where('edom_period_id', $period->id)
+            ->where('siakad_idmahasiswa', (string) $student['siakad_idmahasiswa'])
+            ->whereIn('edom_setting_id', $edomSettingIds)
+            ->get([
+                'edom_setting_id',
+                'siakad_idmatakuliah',
+                'siakad_idtawarmatakuliahdetail',
+            ])
+            ->flatMap(function (EdomResponse $response): array {
+                $keys = [];
+                $detailKey = $this->sectionCompletionKey($response->edom_setting_id, [
+                    'idmatakuliah' => $response->siakad_idmatakuliah,
+                    'idtawarmatakuliahdetail' => $response->siakad_idtawarmatakuliahdetail,
+                ]);
+                $courseKey = $this->sectionCompletionKey($response->edom_setting_id, [
+                    'idmatakuliah' => $response->siakad_idmatakuliah,
+                ]);
+
+                if ($detailKey !== null) {
+                    $keys[$detailKey] = true;
+                }
+
+                if ($courseKey !== null) {
+                    $keys[$courseKey] = true;
+                }
+
+                return $keys;
+            })
             ->all();
     }
 
-    private function studentHasCompletedAllSections(array $student, array $sections): bool
+    private function sectionCompletionKey(int $edomSettingId, array $section): ?string
+    {
+        $routeKey = $this->sectionRouteKey($section);
+        $courseId = $this->nullableInteger($section['idmatakuliah'] ?? null);
+
+        if ($routeKey === null || $courseId === null) {
+            return null;
+        }
+
+        return $edomSettingId.':'.$routeKey.':'.$courseId;
+    }
+
+    private function sectionRouteKey(array $section): ?string
+    {
+        $detailId = $this->nullableInteger($section['idtawarmatakuliahdetail'] ?? null);
+
+        if ($detailId !== null) {
+            return 'd_'.$detailId;
+        }
+
+        $courseId = $this->nullableInteger($section['idmatakuliah'] ?? null);
+
+        if ($courseId !== null) {
+            return 'm_'.$courseId;
+        }
+
+        return null;
+    }
+
+    private function persistedSectionDetailId(array $section): ?int
+    {
+        return $this->nullableInteger($section['idtawarmatakuliahdetail'] ?? null)
+            ?? $this->nullableInteger($section['idmatakuliah'] ?? null);
+    }
+
+    private function studentHasCompletedAllApplicableEdoms(array $student, array $sections): bool
     {
         if ($sections === []) {
             return false;
         }
 
+        $applicableEdoms = EdomSettings::query()
+            ->with('programStudis')
+            ->where('status', 'active')
+            ->get();
+
+        if ($applicableEdoms->isEmpty()) {
+            return false;
+        }
+
+        foreach ($applicableEdoms as $edom) {
+            $settingSections = $this->sectionsForEdomSettings($edom, $sections);
+
+            if (
+                $settingSections === []
+                || ! $this->studentHasCompletedAllSections($student, $settingSections, $edom)
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function studentHasCompletedAllSections(array $student, array $sections, Model $edom): bool
+    {
+        if ($sections === []) {
+            return false;
+        }
+
+        $period = EdomPeriod::query()
+            ->where('year', (int) $student['siakad_idtahunajaran'])
+            ->where('siakad_idsemester', (int) $student['siakad_idsemester'])
+            ->first();
+
+        if (! $period) {
+            return false;
+        }
+
+        $completedSections = EdomResponse::query()
+            ->where('edom_period_id', $period->id)
+            ->where('edom_setting_id', $edom->id)
+            ->where('siakad_idmahasiswa', (string) $student['siakad_idmahasiswa'])
+            ->get([
+                'siakad_idmatakuliah',
+                'siakad_idtawarmatakuliahdetail',
+            ])
+            ->flatMap(function (EdomResponse $response) use ($edom): array {
+                $keys = [];
+                $detailKey = $this->sectionCompletionKey($edom->id, [
+                    'idmatakuliah' => $response->siakad_idmatakuliah,
+                    'idtawarmatakuliahdetail' => $response->siakad_idtawarmatakuliahdetail,
+                ]);
+                $courseKey = $this->sectionCompletionKey($edom->id, [
+                    'idmatakuliah' => $response->siakad_idmatakuliah,
+                ]);
+
+                if ($detailKey !== null) {
+                    $keys[$detailKey] = true;
+                }
+
+                if ($courseKey !== null) {
+                    $keys[$courseKey] = true;
+                }
+
+                return $keys;
+            });
+
         foreach ($sections as $section) {
-            $query = EdomResponse::query()
-                ->where('siakad_idmahasiswa', (string) $student['siakad_idmahasiswa']);
+            $completionKey = $this->sectionCompletionKey($edom->id, $section);
 
-            $detailId = $this->nullableInteger($section['idtawarmatakuliahdetail'] ?? null);
-
-            $detailId !== null
-                ? $query->where('siakad_idtawarmatakuliahdetail', $detailId)
-                : $query->whereNull('siakad_idtawarmatakuliahdetail');
-
-            if (! $query->exists()) {
+            if ($completionKey === null || ! $completedSections->has($completionKey)) {
                 return false;
             }
         }

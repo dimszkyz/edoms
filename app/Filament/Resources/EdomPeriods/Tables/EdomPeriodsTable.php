@@ -11,7 +11,7 @@ use Filament\Actions\EditAction;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Throwable;
+use App\Filament\Resources\EdomPeriods\Schemas\EdomPeriodForm;
 
 class EdomPeriodsTable
 {
@@ -20,7 +20,16 @@ class EdomPeriodsTable
         return $table
             ->columns([
                 TextColumn::make('year')->label('Tahun Ajaran')->sortable(),
-                TextColumn::make('siakad_idsemester')->label('ID Semester')->sortable(),
+                TextColumn::make('siakad_idsemester')
+                    ->label('Semester')
+                    ->formatStateUsing(function (mixed $state): string {
+                        static $semesterOptions;
+
+                        $semesterOptions ??= EdomPeriodForm::semesterOptions();
+
+                        return $semesterOptions[(int) $state] ?? 'Semester ' . $state;
+                    })
+                    ->sortable(),
                 TextColumn::make('created_at')->label('Dibuat')->dateTime('d M Y H:i'),
             ])
             ->recordActions([
@@ -30,13 +39,12 @@ class EdomPeriodsTable
                     ->color('success')
                     ->requiresConfirmation()
                     ->action(function (EdomPeriod $record): void {
-                        try {
-                            app(UnwApiSiakad::class)->openPeriod($record->year, $record->siakad_idsemester);
-                            Notification::make()->title('Periode EDOM berhasil dibuka di SIAKAD')->success()->send();
-                        } catch (Throwable $exception) {
-                            report($exception);
-                            Notification::make()->title('Gagal membuka periode EDOM')->body($exception->getMessage())->danger()->send();
-                        }
+                        app(UnwApiSiakad::class)->openPeriod($record->year, $record->siakad_idsemester);
+
+                        Notification::make()
+                            ->title('Periode EDOM berhasil dibuka di SIAKAD')
+                            ->success()
+                            ->send();
                     }),
 
                 Action::make('closePeriod')
@@ -45,13 +53,12 @@ class EdomPeriodsTable
                     ->color('danger')
                     ->requiresConfirmation()
                     ->action(function (EdomPeriod $record): void {
-                        try {
-                            app(UnwApiSiakad::class)->closePeriod($record->year, $record->siakad_idsemester);
-                            Notification::make()->title('Periode EDOM berhasil ditutup di SIAKAD')->success()->send();
-                        } catch (Throwable $exception) {
-                            report($exception);
-                            Notification::make()->title('Gagal menutup periode EDOM')->body($exception->getMessage())->danger()->send();
-                        }
+                        app(UnwApiSiakad::class)->closePeriod($record->year, $record->siakad_idsemester);
+
+                        Notification::make()
+                            ->title('Periode EDOM berhasil ditutup di SIAKAD')
+                            ->success()
+                            ->send();
                     }),
 
                 EditAction::make(),

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\SettingEdoms\RelationManagers;
+namespace App\Filament\Resources\EdomSettings\RelationManagers;
 
 use App\Filament\Resources\EdomQuestionCategories\EdomQuestionCategoryResource;
 use Filament\Actions\CreateAction;
@@ -39,13 +39,14 @@ class CategoriesRelationManager extends RelationManager
                     ->slideOver()
                     ->mutateDataUsing(function (array $data): array {
                         $data['edom_setting_id'] = $this->ownerRecord->id;
+
                         return $data;
                     })
                     ->visible(fn ($livewire) => $livewire->ownerRecord->isDraft()),
             ])
             ->actions([
-                EditAction::make()->slideOver()->visible(fn ($record) => $record->settingEdom?->isDraft()),
-                DeleteAction::make()->visible(fn ($record) => $record->settingEdom?->isDraft()),
+                EditAction::make()->slideOver()->visible(fn ($record) => $record->edomSettings?->isDraft()),
+                DeleteAction::make()->visible(fn ($record) => $record->edomSettings?->isDraft()),
             ]);
     }
 }

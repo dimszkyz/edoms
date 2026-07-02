@@ -46,14 +46,40 @@
 
         $sectionKey = function (array $section, int $index): string {
             $detail = preg_replace('/[^A-Za-z0-9_-]/', '_', (string) ($section['idtawarmatakuliahdetail'] ?? ''));
+            $course = preg_replace('/[^A-Za-z0-9_-]/', '_', (string) ($section['idmatakuliah'] ?? ''));
+            $identity = $detail !== '' ? 'd_' . $detail : ($course !== '' ? 'm_' . $course : 'x');
 
-            return 's_' . $index . '_' . ($detail !== '' ? $detail : 'x');
+            return 's_' . $index . '_' . $identity;
         };
 
         $sectionLecturer = function (array $section): array {
             $lecturer = $section['dosen'] ?? [];
 
             return is_array($lecturer) ? $lecturer : [];
+        };
+
+        $sectionTeamLecturers = function (array $section): array {
+            $team = $section['dosen_team'] ?? [];
+
+            if (is_string($team)) {
+                $team = [$team];
+            }
+
+            if (! is_array($team)) {
+                return [];
+            }
+
+            return collect($team)
+                ->map(function (mixed $lecturer): string {
+                    if (is_array($lecturer)) {
+                        return trim((string) ($lecturer['nama'] ?? $lecturer['nidn'] ?? ''));
+                    }
+
+                    return trim((string) $lecturer);
+                })
+                ->filter()
+                ->values()
+                ->all();
         };
 
         $sectionTitle = function (array $section): string {
@@ -125,6 +151,7 @@
                             $section = is_array($section) ? $section : [];
                             $key = $sectionKey($section, $sectionIndex);
                             $lecturer = $sectionLecturer($section);
+                            $teamLecturers = $sectionTeamLecturers($section);
                             $questionNumber = 1;
                         @endphp
 
@@ -137,9 +164,12 @@
                                 @if (! empty($lecturer['nidn']))
                                     (NIDN: {{ $lecturer['nidn'] }})
                                 @endif
+                                @if ($teamLecturers !== [])
+                                    <br>Tim dosen: {{ implode(', ', $teamLecturers) }}
+                                @endif
                             </p>
                             <p class="edom-guide-text">
-                                Program Studi SIAKAD: {{ $section['id_unw_program_studi'] ?? '-' }} ·
+                                ID Mata Kuliah: {{ $section['idmatakuliah'] ?? '-' }} ·
                                 ID Detail Penawaran: {{ $section['idtawarmatakuliahdetail'] ?? '-' }}
                             </p>
                         </section>
@@ -148,7 +178,6 @@
                         <input type="hidden" name="sections[{{ $key }}][idmatakuliah]" value="{{ $section['idmatakuliah'] ?? '' }}">
                         <input type="hidden" name="sections[{{ $key }}][kode]" value="{{ $section['kode'] ?? '' }}">
                         <input type="hidden" name="sections[{{ $key }}][nama]" value="{{ $section['nama'] ?? '' }}">
-                        <input type="hidden" name="sections[{{ $key }}][id_unw_program_studi]" value="{{ $section['id_unw_program_studi'] ?? '' }}">
                         <input type="hidden" name="sections[{{ $key }}][dosen][nidn]" value="{{ $lecturer['nidn'] ?? '' }}">
                         <input type="hidden" name="sections[{{ $key }}][dosen][nama]" value="{{ $lecturer['nama'] ?? '' }}">
 
@@ -193,7 +222,7 @@
                                                                 name="essays[{{ $key }}][{{ $question->id }}]"
                                                                 class="edom-essay-input"
                                                                 placeholder="Tulis jawaban Anda di sini..."
-                                                            >{{ old('texts.' . $key . '.' . $question->id) }}</textarea>
+                                                            >{{ old('essays.' . $key . '.' . $question->id) }}</textarea>
                                                         </td>
                                                     @elseif ($options->isNotEmpty())
                                                         @foreach ($options as $option)
@@ -245,4 +274,3 @@
         </div>
     </main>
 @endsection
-

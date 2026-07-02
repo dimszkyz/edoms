@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\SettingEdoms\RelationManagers;
+namespace App\Filament\Resources\EdomSettings\RelationManagers;
 
 use App\Filament\Resources\EdomQuestionCategories\EdomQuestionCategoryResource;
 use Filament\Actions\CreateAction;
@@ -63,10 +63,10 @@ class QuestionCategoriesRelationManager extends RelationManager
             ->actions([
                 EditAction::make()
                     ->slideOver()
-                    ->visible(fn ($record) => $record->settingEdom?->isDraft()),
+                    ->visible(fn ($record) => $record->edomSettings?->isDraft()),
 
                 DeleteAction::make()
-                    ->visible(fn ($record) => $record->settingEdom?->isDraft()),
+                    ->visible(fn ($record) => $record->edomSettings?->isDraft()),
             ]);
     }
 }

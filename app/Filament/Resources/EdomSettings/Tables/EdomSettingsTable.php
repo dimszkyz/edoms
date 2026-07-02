@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\SettingEdoms\Tables;
+namespace App\Filament\Resources\EdomSettings\Tables;
 
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -9,13 +9,13 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 
-class SettingEdomsTable
+class EdomSettingsTable
 {
     public static function configure(Table $table): Table
     {
         return $table
             ->columns([
-                TextColumn::make('name')->label('Nama Setting EDOM')->searchable(),
+                TextColumn::make('name')->label('Nama EdomSettings')->searchable(),
                 TextColumn::make('programStudis.nama')->label('Program Studi')->badge()->separator(),
                 TextColumn::make('categories_count')->counts('categories')->label('Kategori')->badge(),
                 TextColumn::make('questions_count')->counts('questions')->label('Pertanyaan')->badge(),

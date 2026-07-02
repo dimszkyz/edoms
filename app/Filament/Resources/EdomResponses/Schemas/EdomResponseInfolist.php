@@ -14,10 +14,13 @@ class EdomResponseInfolist
         return $schema->components([
             Section::make('Informasi Pengisian')
                 ->schema([
-                    TextEntry::make('settingEdom.name')->label('Setting EDOM')->placeholder('-'),
+                    TextEntry::make('edomSettings.name')->label('EdomSettings')->placeholder('-'),
                     TextEntry::make('period.year')->label('Tahun Ajaran')->placeholder('-'),
                     TextEntry::make('period.siakad_idsemester')->label('Semester')->placeholder('-'),
-                    TextEntry::make('siakad_idmahasiswa')->label('ID Mahasiswa')->placeholder('-'),
+                    TextEntry::make('privacy_note')
+                        ->label('Identitas Mahasiswa')
+                        ->state('Tidak ditampilkan pada laporan hasil EDOM.')
+                        ->badge(),
                     TextEntry::make('siakad_idmatakuliah')->label('ID Mata Kuliah')->placeholder('-'),
                     TextEntry::make('siakad_idtawarmatakuliahdetail')->label('ID Detail Penawaran')->placeholder('-'),
                     TextEntry::make('submitted_at')->label('Dikirim')->dateTime('d M Y H:i'),

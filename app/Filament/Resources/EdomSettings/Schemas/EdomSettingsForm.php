@@ -1,18 +1,18 @@
 <?php
 
-namespace App\Filament\Resources\SettingEdoms\Schemas;
+namespace App\Filament\Resources\EdomSettings\Schemas;
 
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
 
-class SettingEdomForm
+class EdomSettingsForm
 {
     public static function configure(Schema $schema): Schema
     {
         return $schema->components([
             TextInput::make('name')
-                ->label('Nama Setting EDOM')
+                ->label('Nama EdomSettings')
                 ->required()
                 ->maxLength(255),
 
