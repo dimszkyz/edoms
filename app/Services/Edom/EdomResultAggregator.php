@@ -34,35 +34,40 @@ class EdomResultAggregator
                 'edom_periods.siakad_idsemester',
                 'edom_response.edom_setting_id',
                 'edom_settings.name as edom_name',
+                'edom_response.id_unw_program_studi',
                 'edom_response.siakad_idmatakuliah',
                 'edom_response.siakad_idtawarmatakuliahdetail',
                 'edom_questions.edom_question_category_id',
-                'edom_question_categories.name as category_name',
                 'edom_response_detail.edom_question_id',
-                'edom_questions.statement as question_statement',
             ])
+            ->selectRaw('COALESCE(edom_response_detail.category_name_snapshot, edom_question_categories.name) as category_name')
+            ->selectRaw('COALESCE(edom_response_detail.question_statement_snapshot, edom_questions.statement) as question_statement')
             ->selectRaw('COUNT(DISTINCT edom_response.id) as respondent_count')
             ->selectRaw('COUNT(edom_response_detail.id) as answer_count')
-            ->selectRaw('AVG(edom_question_options.score) as average_score')
+            ->selectRaw('AVG(COALESCE(edom_response_detail.option_score_snapshot, edom_question_options.score)) as average_score')
             ->groupBy([
                 'edom_response.edom_period_id',
                 'edom_periods.year',
                 'edom_periods.siakad_idsemester',
                 'edom_response.edom_setting_id',
                 'edom_settings.name',
+                'edom_response.id_unw_program_studi',
                 'edom_response.siakad_idmatakuliah',
                 'edom_response.siakad_idtawarmatakuliahdetail',
                 'edom_questions.edom_question_category_id',
-                'edom_question_categories.name',
                 'edom_response_detail.edom_question_id',
+                'edom_response_detail.category_name_snapshot',
+                'edom_question_categories.name',
+                'edom_response_detail.question_statement_snapshot',
                 'edom_questions.statement',
             ])
             ->orderBy('edom_periods.year')
             ->orderBy('edom_periods.siakad_idsemester')
             ->orderBy('edom_settings.name')
+            ->orderBy('edom_response.id_unw_program_studi')
             ->orderBy('edom_response.siakad_idtawarmatakuliahdetail')
-            ->orderBy('edom_question_categories.name')
-            ->orderBy('edom_questions.statement')
+            ->orderBy('category_name')
+            ->orderBy('question_statement')
             ->get()
             ->map(fn (EdomResponse $row): array => $this->toSummaryRow($row))
             ->values();
@@ -77,6 +82,7 @@ class EdomResultAggregator
             ->groupBy(fn (array $row): string => implode('|', [
                 $row['edom_period_id'],
                 $row['edom_setting_id'],
+                $row['id_unw_program_studi'],
                 $row['siakad_idtawarmatakuliahdetail'],
             ]))
             ->map(fn (Collection $rows): Collection => $rows
@@ -163,6 +169,7 @@ class EdomResultAggregator
     {
         $section = $this->findSection($row);
         $averageScore = $row->average_score === null ? null : round((float) $row->average_score, 2);
+        $programStudiId = $row->id_unw_program_studi ?? data_get($section, 'id_unw_program_studi');
 
         return [
             'edom_period_id' => (int) $row->edom_period_id,
@@ -170,6 +177,7 @@ class EdomResultAggregator
             'siakad_idsemester' => (int) $row->siakad_idsemester,
             'edom_setting_id' => (int) $row->edom_setting_id,
             'edom_name' => (string) $row->edom_name,
+            'id_unw_program_studi' => $programStudiId === null ? null : (int) $programStudiId,
             'siakad_idmatakuliah' => (int) $row->siakad_idmatakuliah,
             'siakad_idtawarmatakuliahdetail' => (int) $row->siakad_idtawarmatakuliahdetail,
             'kode' => (string) data_get($section, 'kode', '-'),
@@ -177,7 +185,6 @@ class EdomResultAggregator
             'course_label' => $this->courseLabelFor($row),
             'dosen' => $this->dosenName(data_get($section, 'dosen')),
             'dosen_team' => $this->dosenTeam(data_get($section, 'dosen_team')),
-            'id_unw_program_studi' => data_get($section, 'id_unw_program_studi'),
             'category_name' => (string) ($row->category_name ?: 'Tanpa kategori'),
             'question_statement' => (string) ($row->question_statement ?: 'Pertanyaan tidak ditemukan'),
             'respondent_count' => (int) $row->respondent_count,
@@ -193,12 +200,33 @@ class EdomResultAggregator
      */
     private function findSection(EdomResponse $row): ?array
     {
+        $tahunAjaran = $this->tahunAjaranFor($row);
+        $semester = $this->semesterFor($row);
+
+        if ($tahunAjaran === null || $semester === null) {
+            return null;
+        }
+
         return $this->sectionFor(
-            $row->siakad_idtahunajaran,
-            $row->siakad_idsemester,
+            $tahunAjaran,
+            $semester,
             $row->siakad_idtawarmatakuliahdetail,
             $row->siakad_idmatakuliah,
         );
+    }
+
+    private function tahunAjaranFor(EdomResponse $row): int|string|null
+    {
+        $value = $row->getAttribute('siakad_idtahunajaran') ?? $row->period?->year;
+
+        return $value === null || $value === '' ? null : $value;
+    }
+
+    private function semesterFor(EdomResponse $row): int|string|null
+    {
+        $value = $row->getAttribute('siakad_idsemester') ?? $row->period?->siakad_idsemester;
+
+        return $value === null || $value === '' ? null : $value;
     }
 
     private function dosenName(mixed $dosen): string
@@ -214,7 +242,17 @@ class EdomResultAggregator
     {
         if (is_array($dosenTeam)) {
             return collect($dosenTeam)
-                ->filter(fn ($name): bool => is_string($name) && trim($name) !== '')
+                ->map(function ($name): ?string {
+                    if (is_array($name)) {
+                        $lecturerName = trim((string) data_get($name, 'nama', ''));
+                        $nidn = trim((string) data_get($name, 'nidn', ''));
+
+                        return trim($lecturerName.($nidn !== '' ? ' ('.$nidn.')' : '')) ?: null;
+                    }
+
+                    return is_string($name) && trim($name) !== '' ? trim($name) : null;
+                })
+                ->filter()
                 ->implode(', ');
         }
 
