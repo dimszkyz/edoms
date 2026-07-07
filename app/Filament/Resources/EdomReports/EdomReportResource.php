@@ -15,7 +15,6 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
 
 class EdomReportResource extends Resource
 {
@@ -68,13 +67,11 @@ class EdomReportResource extends Resource
                 TextColumn::make('course_count')
                     ->label('Jumlah Mata Kuliah')
                     ->state(fn (ProgramStudi $record): int => self::courseCountForProgramStudi($record))
-                    ->description('Berdasarkan idmatakuliah unik dari edom_response')
                     ->badge()
                     ->color('info'),
                 TextColumn::make('response_count')
                     ->label('Jumlah Respons')
                     ->state(fn (ProgramStudi $record): int => self::responseCountForProgramStudi($record))
-                    ->description('Berdasarkan relasi edom_response.id_unw_program_studi')
                     ->badge()
                     ->color('success'),
             ])
@@ -97,63 +94,33 @@ class EdomReportResource extends Resource
         ];
     }
 
-    public static function settingIdsForProgramStudi(ProgramStudi $programStudi)
-    {
-        return DB::table('edom_settings_program_studi')
-            ->where('program_studi_id', $programStudi->id)
-            ->pluck('edom_setting_id')
-            ->map(fn ($id): int => (int) $id)
-            ->values();
-    }
-
     public static function courseKeyForResponse(EdomResponse $response): string
     {
         $sectionId = (int) $response->siakad_idtawarmatakuliahdetail;
 
-        return $sectionId > 0 ? 'd_'.$sectionId : static::courseKeyForCourseId($response->siakad_idmatakuliah);
-    }
-
-    public static function courseKeyForCourseId(int|string $courseId): string
-    {
-        return 'm_'.((int) $courseId);
+        return $sectionId > 0 ? 'd_'.$sectionId : 'm_'.((int) $response->siakad_idmatakuliah);
     }
 
     public static function courseKeyForKrsSection(EdomKrsSection $section): string
     {
-        return static::courseKeyForCourseId($section->idmatakuliah);
+        return 'm_'.((int) $section->idmatakuliah);
     }
 
     public static function courseCountForProgramStudi(ProgramStudi $programStudi): int
     {
-        if ($programStudi->id_unw_program_studi === null) {
-            return 0;
-        }
-
-        return EdomResponse::query()
-            ->where('id_unw_program_studi', (int) $programStudi->id_unw_program_studi)
+        return static::responsesForProgramStudi($programStudi)
             ->distinct('siakad_idmatakuliah')
             ->count('siakad_idmatakuliah');
     }
 
     public static function responseCountForProgramStudi(ProgramStudi $programStudi): int
     {
-        if ($programStudi->id_unw_program_studi === null) {
-            return 0;
-        }
-
-        return EdomResponse::query()
-            ->where('id_unw_program_studi', (int) $programStudi->id_unw_program_studi)
-            ->count();
+        return static::responsesForProgramStudi($programStudi)->count();
     }
 
     public static function responseCountForProgramStudiAndCourse(ProgramStudi $programStudi, string $courseKey): int
     {
-        if ($programStudi->id_unw_program_studi === null) {
-            return 0;
-        }
-
-        $query = EdomResponse::query()
-            ->where('id_unw_program_studi', (int) $programStudi->id_unw_program_studi);
+        $query = static::responsesForProgramStudi($programStudi);
 
         if (str_starts_with($courseKey, 'd_')) {
             $query->where('siakad_idtawarmatakuliahdetail', (int) substr($courseKey, 2));
@@ -164,5 +131,48 @@ class EdomReportResource extends Resource
         }
 
         return $query->count();
+    }
+
+    public static function responsesForProgramStudi(ProgramStudi $programStudi): Builder
+    {
+        $query = EdomResponse::query();
+
+        if ($programStudi->id_unw_program_studi === null) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where(
+            'id_unw_program_studi',
+            (int) $programStudi->id_unw_program_studi,
+        );
+    }
+
+    public static function coursesForProgramStudi(ProgramStudi $programStudi): Builder
+    {
+        if ($programStudi->id_unw_program_studi === null) {
+            return EdomKrsSection::query()->whereRaw('1 = 0');
+        }
+
+        return EdomKrsSection::query()
+            ->where('id_unw_program_studi', (int) $programStudi->id_unw_program_studi)
+            ->whereIn(
+                'idmatakuliah',
+                static::responsesForProgramStudi($programStudi)
+                    ->select('siakad_idmatakuliah')
+                    ->distinct(),
+            )
+            ->select([
+                'idmatakuliah',
+            ])
+            ->selectRaw('MIN(id) as id')
+            ->selectRaw('MIN(idtawarmatakuliahdetail) as idtawarmatakuliahdetail')
+            ->selectRaw('MIN(kode) as kode')
+            ->selectRaw('MIN(nama) as nama')
+            ->selectRaw('COUNT(DISTINCT siakad_idmahasiswa) as krs_student_count')
+            ->groupBy([
+                'idmatakuliah',
+            ])
+            ->orderBy('kode')
+            ->orderBy('nama');
     }
 }

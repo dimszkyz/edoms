@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\EdomSettings\Tables;
 
+use App\Models\EdomSettings;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -15,9 +16,17 @@ class EdomSettingsTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('programStudis'))
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['programStudis', 'periods']))
             ->columns([
                 TextColumn::make('name')->label('Nama EdomSettings')->searchable(),
+                TextColumn::make('period_preview')
+                    ->label('Periode')
+                    ->state(fn ($record): array => $record->periods
+                        ->map(fn ($period): string => $period->display_name)
+                        ->all())
+                    ->bulleted()
+                    ->listWithLineBreaks()
+                    ->placeholder('-'),
                 TextColumn::make('program_studi_preview')
                     ->label('Program Studi')
                     ->state(function ($record): string {
@@ -41,16 +50,20 @@ class EdomSettingsTable
                 TextColumn::make('categories_count')->counts('categories')->label('Kategori')->badge(),
                 TextColumn::make('questions_count')->counts('questions')->label('Pertanyaan')->badge(),
                 TextColumn::make('responses_count')->counts('responses')->label('Hasil')->badge()->color('success'),
-                TextColumn::make('status')->label('Status')->badge(),
+                TextColumn::make('status')
+                    ->label('Status')
+                    ->formatStateUsing(fn (string $state): string => EdomSettings::statusOptions()[$state] ?? $state)
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        EdomSettings::STATUS_ACTIVE => 'success',
+                        EdomSettings::STATUS_CLOSED => 'danger',
+                        default => 'gray',
+                    }),
                 TextColumn::make('created_at')->label('Dibuat')->dateTime('d M Y H:i'),
             ])
             ->filters([
                 SelectFilter::make('status')
-                    ->options([
-                        'draft' => 'Draft',
-                        'active' => 'Aktif',
-                        'closed' => 'Ditutup',
-                    ]),
+                    ->options(EdomSettings::statusOptions()),
             ])
             ->recordActions([EditAction::make()])
             ->toolbarActions([

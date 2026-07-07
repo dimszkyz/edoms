@@ -19,6 +19,12 @@ use Throwable;
 
 class EdomPublicController extends Controller
 {
+    private const RESPONSE_UPDATE_LOCKED_MESSAGE = 'Pembaruan jawaban pada periode EDOM ini dikunci. Jawaban yang sudah tersimpan tidak dapat diperbarui, tetapi mata kuliah yang belum diisi masih dapat dikerjakan.';
+
+    private const PERIOD_DRAFT_MESSAGE = 'Periode EDOM masih berstatus draft dan belum dapat diisi oleh mahasiswa.';
+
+    private const PERIOD_CLOSED_MESSAGE = 'Periode EDOM sudah ditutup dan tidak lagi menerima pengisian maupun pembaruan jawaban.';
+
     public function index(Request $request): View
     {
         $student = session('edom_student');
@@ -60,32 +66,44 @@ class EdomPublicController extends Controller
             }
         }
 
+        $studentPeriod = is_array($student)
+            ? $this->studentPeriod($student)
+            : null;
+
         $activeEdoms = EdomSettings::query()
             ->with(['programStudis'])
             ->withCount(['categories', 'questions'])
             ->where('status', 'active')
+            ->when(is_array($student), function ($query) use ($studentPeriod) {
+                return $studentPeriod?->isActive()
+                    ? $query->whereHas('periods', fn ($query) => $query->whereKey($studentPeriod->id))
+                    : $query->whereRaw('1 = 0');
+            })
             ->latest('id')
             ->get();
 
         $studentEdomSections = collect();
 
         if ($student && ! $studentFetchError) {
+            $allowsResponseUpdates = $studentPeriod?->allowsResponseUpdates() ?? false;
             $completedSectionKeys = $this->completedSectionKeys(
                 $student,
                 $activeEdoms->pluck('id')->map(fn ($id) => (int) $id)->all()
             );
 
             $studentEdomSections = $activeEdoms
-                ->map(function (EdomSettings $edom) use ($studentSections, $completedSectionKeys): array {
+                ->map(function (EdomSettings $edom) use ($studentSections, $completedSectionKeys, $allowsResponseUpdates, $studentPeriod): array {
                     $sections = collect($this->sectionsForEdomSettings($edom, $studentSections))
-                        ->map(function (array $section) use ($edom, $completedSectionKeys): array {
+                        ->map(function (array $section) use ($edom, $completedSectionKeys, $allowsResponseUpdates): array {
                             $completionKey = $this->sectionCompletionKey($edom->id, $section);
+                            $completed = $completionKey !== null
+                                && isset($completedSectionKeys[$completionKey]);
 
                             return [
                                 'section' => $section,
                                 'section_key' => $this->sectionRouteKey($section),
-                                'completed' => $completionKey !== null
-                                    && isset($completedSectionKeys[$completionKey]),
+                                'completed' => $completed,
+                                'update_locked' => $completed && ! $allowsResponseUpdates,
                             ];
                         })
                         ->values();
@@ -93,6 +111,7 @@ class EdomPublicController extends Controller
                     return [
                         'edom' => $edom,
                         'sections' => $sections,
+                        'period_status' => $studentPeriod?->lifecycle_status ?? 'Tidak Tersedia',
                     ];
                 })
                 ->filter(fn (array $group): bool => $group['sections']->isNotEmpty())
@@ -166,6 +185,27 @@ class EdomPublicController extends Controller
             ]);
         }
 
+        $period = $this->studentPeriod($student);
+
+        if (! $period || ! $edom->periods->contains($period->id)) {
+            return view('edom.status', [
+                'edom' => $edom,
+                'statusTitle' => 'EDOM tidak tersedia pada periode ini',
+                'statusMessage' => 'EDOM Settings ini tidak terhubung dengan tahun ajaran dan semester dari SIAKAD.',
+            ]);
+        }
+
+        if (! $period->isActive()) {
+            return view('edom.status', [
+                'edom' => $edom,
+                'statusBadge' => $period->status_label,
+                'statusTitle' => $period->isDraft()
+                    ? 'Periode EDOM belum dibuka'
+                    : 'Periode EDOM sudah ditutup',
+                'statusMessage' => $this->periodUnavailableMessage($period),
+            ]);
+        }
+
         try {
             $sections = $this->sectionsForEdomSettings($edom, $this->fetchStudentSections($student));
         } catch (Throwable $exception) {
@@ -201,6 +241,16 @@ class EdomPublicController extends Controller
             ]);
         }
 
+        $sectionCompleted = $this->studentHasCompletedSection($student, $edom, $sections[0]);
+
+        if ($sectionCompleted && $period->locksResponseUpdates()) {
+            return view('edom.status', [
+                'edom' => $edom,
+                'statusTitle' => 'Jawaban EDOM terkunci',
+                'statusMessage' => self::RESPONSE_UPDATE_LOCKED_MESSAGE,
+            ]);
+        }
+
         return view('edom.show', compact('edom', 'student', 'sections'));
     }
 
@@ -223,11 +273,29 @@ class EdomPublicController extends Controller
                 ->with('error', 'Pengisian EDOM harus dibuka melalui SIAKAD.');
         }
 
-        return $this->submitStudentSections($request, $edom);
+        $student = session('edom_student');
+        $period = $this->studentPeriod($student);
+
+        if (! $period || ! $edom->periods->contains($period->id)) {
+            return redirect()
+                ->route('edom.home')
+                ->with('error', 'EDOM Settings tidak tersedia pada periode mahasiswa ini.');
+        }
+
+        if (! $period->isActive()) {
+            return redirect()
+                ->route('edom.home')
+                ->with('error', $this->periodUnavailableMessage($period));
+        }
+
+        return $this->submitStudentSections($request, $edom, $period);
     }
 
-    private function submitStudentSections(Request $request, Model $edom): RedirectResponse
-    {
+    private function submitStudentSections(
+        Request $request,
+        Model $edom,
+        EdomPeriod $period,
+    ): RedirectResponse {
         $student = session('edom_student');
         $questions = $edom->categories->flatMap(fn ($category) => $category->questions);
         $optionIds = $edom->questionOptions->pluck('id')->map(fn ($id) => (string) $id)->values()->all();
@@ -252,6 +320,17 @@ class EdomPublicController extends Controller
             $settingSections
         );
 
+        if (
+            $period->locksResponseUpdates()
+            && collect($submittedSections)->contains(
+                fn (array $section): bool => $this->studentHasCompletedSection($student, $edom, $section)
+            )
+        ) {
+            return redirect()
+                ->route('edom.home')
+                ->with('error', self::RESPONSE_UPDATE_LOCKED_MESSAGE);
+        }
+
         $rules = [];
 
         foreach ($submittedSections as $sectionKey => $section) {
@@ -266,21 +345,45 @@ class EdomPublicController extends Controller
 
         $request->validate($rules);
 
-        DB::transaction(function () use ($request, $edom, $questions, $submittedSections, $student) {
-            $period = $this->firstOrCreatePeriod($student);
-
+        DB::transaction(function () use ($request, $edom, $questions, $submittedSections, $student, $period) {
             foreach ($submittedSections as $sectionKey => $section) {
+                $responseIdentity = [
+                    'edom_period_id' => $period->id,
+                    'edom_setting_id' => $edom->id,
+                    'siakad_idmahasiswa' => (string) $student['siakad_idmahasiswa'],
+                    'siakad_idmatakuliah' => $this->nullableInteger($section['idmatakuliah'] ?? null),
+                    'siakad_idtawarmatakuliahdetail' => $this->persistedSectionDetailId($section),
+                ];
+
+                $currentPeriod = $period->fresh();
+
+                if (! $currentPeriod->isActive()) {
+                    throw ValidationException::withMessages([
+                        'sections' => $this->periodUnavailableMessage($currentPeriod),
+                    ]);
+                }
+
+                if (
+                    $currentPeriod->locksResponseUpdates()
+                    && EdomResponse::query()->where($responseIdentity)->exists()
+                ) {
+                    throw ValidationException::withMessages([
+                        'sections' => self::RESPONSE_UPDATE_LOCKED_MESSAGE,
+                    ]);
+                }
+
+                $responseValues = [
+                    'submitted_at' => now(),
+                ];
+                $programStudiId = $this->nullableInteger($section['id_unw_program_studi'] ?? null);
+
+                if ($programStudiId !== null) {
+                    $responseValues['id_unw_program_studi'] = $programStudiId;
+                }
+
                 $response = EdomResponse::updateOrCreate(
-                    [
-                        'edom_period_id' => $period->id,
-                        'edom_setting_id' => $edom->id,
-                        'siakad_idmahasiswa' => (string) $student['siakad_idmahasiswa'],
-                        'siakad_idmatakuliah' => $this->nullableInteger($section['idmatakuliah'] ?? null),
-                        'siakad_idtawarmatakuliahdetail' => $this->persistedSectionDetailId($section),
-                    ],
-                    [
-                        'submitted_at' => now(),
-                    ]
+                    $responseIdentity,
+                    $responseValues
                 );
 
                 foreach ($questions as $question) {
@@ -344,6 +447,7 @@ class EdomPublicController extends Controller
 
         $edom->load([
             'programStudis',
+            'periods',
             'categories' => fn ($query) => $query->orderBy('id'),
             'categories.questions' => fn ($query) => $query->orderBy('id'),
             'questionOptions' => fn ($query) => $query->orderBy('score')->orderBy('id'),
@@ -391,7 +495,24 @@ class EdomPublicController extends Controller
 
     private function sectionsForEdomSettings(Model $edom, array $sections): array
     {
-        return array_values($sections);
+        $programStudiIds = $edom->programStudis
+            ->pluck('id_unw_program_studi')
+            ->filter(fn ($id): bool => $id !== null)
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+
+        if ($programStudiIds === []) {
+            return [];
+        }
+
+        return collect($sections)
+            ->filter(fn (array $section): bool => in_array(
+                (int) data_get($section, 'id_unw_program_studi'),
+                $programStudiIds,
+                true,
+            ))
+            ->values()
+            ->all();
     }
 
     private function resolveSubmittedSections(array $submittedSections, array $authoritativeSections): array
@@ -498,6 +619,25 @@ class EdomPublicController extends Controller
             ->all();
     }
 
+    private function studentHasCompletedSection(array $student, Model $edom, array $section): bool
+    {
+        $completionKey = $this->sectionCompletionKey((int) $edom->id, $section);
+
+        if ($completionKey === null) {
+            return false;
+        }
+
+        return isset($this->completedSectionKeys($student, [(int) $edom->id])[$completionKey]);
+    }
+
+    private function studentPeriod(array $student): ?EdomPeriod
+    {
+        return EdomPeriod::query()
+            ->where('year', (int) $student['siakad_idtahunajaran'])
+            ->where('siakad_idsemester', (int) $student['siakad_idsemester'])
+            ->first();
+    }
+
     private function sectionCompletionKey(int $edomSettingId, array $section): ?string
     {
         $routeKey = $this->sectionRouteKey($section);
@@ -539,27 +679,52 @@ class EdomPublicController extends Controller
             return false;
         }
 
+        $period = $this->studentPeriod($student);
+
+        if (! $period) {
+            return false;
+        }
+
+        if (! $period->isActive()) {
+            return false;
+        }
+
         $applicableEdoms = EdomSettings::query()
             ->with('programStudis')
             ->where('status', 'active')
+            ->whereHas('periods', fn ($query) => $query->whereKey($period->id))
             ->get();
+
+        $applicableEdoms = $applicableEdoms
+            ->map(fn (EdomSettings $edom): array => [
+                'edom' => $edom,
+                'sections' => $this->sectionsForEdomSettings($edom, $sections),
+            ])
+            ->filter(fn (array $item): bool => $item['sections'] !== [])
+            ->values();
 
         if ($applicableEdoms->isEmpty()) {
             return false;
         }
 
-        foreach ($applicableEdoms as $edom) {
-            $settingSections = $this->sectionsForEdomSettings($edom, $sections);
-
-            if (
-                $settingSections === []
-                || ! $this->studentHasCompletedAllSections($student, $settingSections, $edom)
-            ) {
+        foreach ($applicableEdoms as $item) {
+            if (! $this->studentHasCompletedAllSections(
+                $student,
+                $item['sections'],
+                $item['edom'],
+            )) {
                 return false;
             }
         }
 
         return true;
+    }
+
+    private function periodUnavailableMessage(EdomPeriod $period): string
+    {
+        return $period->isDraft()
+            ? self::PERIOD_DRAFT_MESSAGE
+            : self::PERIOD_CLOSED_MESSAGE;
     }
 
     private function studentHasCompletedAllSections(array $student, array $sections, Model $edom): bool
@@ -615,14 +780,6 @@ class EdomPublicController extends Controller
         }
 
         return true;
-    }
-
-    private function firstOrCreatePeriod(array $student): EdomPeriod
-    {
-        return EdomPeriod::firstOrCreate([
-            'year' => (int) $student['siakad_idtahunajaran'],
-            'siakad_idsemester' => (int) $student['siakad_idsemester'],
-        ]);
     }
 
     private function verifyHandoffToken(string $token): array
