@@ -5,9 +5,9 @@ namespace App\Filament\Resources\EdomReports;
 use App\Filament\Resources\EdomReports\Pages\ListEdomReportCourses;
 use App\Filament\Resources\EdomReports\Pages\ListEdomReports;
 use App\Filament\Resources\EdomReports\Pages\ViewEdomCourseReport;
-use App\Models\EdomKrsSection;
 use App\Models\EdomResponse;
 use App\Models\ProgramStudi;
+use App\Services\Edom\EdomKrsReportData;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Resources\Resource;
@@ -15,6 +15,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class EdomReportResource extends Resource
 {
@@ -98,16 +99,22 @@ class EdomReportResource extends Resource
     {
         $sectionId = (int) $response->siakad_idtawarmatakuliahdetail;
 
-        return $sectionId > 0 ? 'd_'.$sectionId : 'm_'.((int) $response->siakad_idmatakuliah);
+        return $sectionId > 0 ? 'd_'.$sectionId : self::courseKeyForCourseId($response->siakad_idmatakuliah);
     }
 
-    public static function courseKeyForKrsSection(EdomKrsSection $section): string
+    public static function courseKeyForCourseId(int|string|null $courseId): string
     {
-        return 'm_'.((int) $section->idmatakuliah);
+        return 'm_'.((int) $courseId);
     }
 
     public static function courseCountForProgramStudi(ProgramStudi $programStudi): int
     {
+        $krsCourseCount = app(EdomKrsReportData::class)->courseCountForProgramStudi($programStudi);
+
+        if ($krsCourseCount > 0) {
+            return $krsCourseCount;
+        }
+
         return static::responsesForProgramStudi($programStudi)
             ->distinct('siakad_idmatakuliah')
             ->count('siakad_idmatakuliah');
@@ -149,29 +156,44 @@ class EdomReportResource extends Resource
 
     public static function coursesForProgramStudi(ProgramStudi $programStudi): Builder
     {
-        if ($programStudi->id_unw_program_studi === null) {
-            return EdomKrsSection::query()->whereRaw('1 = 0');
+        $rows = app(EdomKrsReportData::class)->reportCourseRowsForProgramStudi($programStudi);
+
+        if ($rows->isEmpty()) {
+            return static::responsesForProgramStudi($programStudi)
+                ->whereNotNull('siakad_idmatakuliah')
+                ->selectRaw('MIN(id) as id')
+                ->selectRaw('siakad_idmatakuliah')
+                ->selectRaw('MIN(siakad_idtawarmatakuliahdetail) as siakad_idtawarmatakuliahdetail')
+                ->selectRaw('siakad_idmatakuliah as idmatakuliah')
+                ->selectRaw('MIN(siakad_idtawarmatakuliahdetail) as idtawarmatakuliahdetail')
+                ->selectRaw('NULL as kode')
+                ->selectRaw("CONCAT('Mata kuliah #', siakad_idmatakuliah) as nama")
+                ->selectRaw("CONCAT('Mata kuliah #', siakad_idmatakuliah) as course_label")
+                ->selectRaw('COUNT(DISTINCT siakad_idmahasiswa) as krs_student_count')
+                ->groupBy('siakad_idmatakuliah')
+                ->orderBy('siakad_idmatakuliah');
         }
 
-        return EdomKrsSection::query()
-            ->where('id_unw_program_studi', (int) $programStudi->id_unw_program_studi)
-            ->whereIn(
-                'idmatakuliah',
-                static::responsesForProgramStudi($programStudi)
-                    ->select('siakad_idmatakuliah')
-                    ->distinct(),
-            )
-            ->select([
-                'idmatakuliah',
-            ])
-            ->selectRaw('MIN(id) as id')
-            ->selectRaw('MIN(idtawarmatakuliahdetail) as idtawarmatakuliahdetail')
-            ->selectRaw('MIN(kode) as kode')
-            ->selectRaw('MIN(nama) as nama')
-            ->selectRaw('COUNT(DISTINCT siakad_idmahasiswa) as krs_student_count')
-            ->groupBy([
-                'idmatakuliah',
-            ])
+        $union = null;
+
+        foreach ($rows as $row) {
+            $select = DB::query()
+                ->selectRaw('? as id', [(int) $row['id']])
+                ->selectRaw('? as siakad_idmatakuliah', [(int) $row['siakad_idmatakuliah']])
+                ->selectRaw('? as siakad_idtawarmatakuliahdetail', [$row['siakad_idtawarmatakuliahdetail']])
+                ->selectRaw('? as idmatakuliah', [(int) $row['idmatakuliah']])
+                ->selectRaw('? as idtawarmatakuliahdetail', [$row['idtawarmatakuliahdetail']])
+                ->selectRaw('? as kode', [$row['kode']])
+                ->selectRaw('? as nama', [$row['nama']])
+                ->selectRaw('? as course_label', [$row['course_label']])
+                ->selectRaw('? as krs_student_count', [(int) $row['krs_student_count']]);
+
+            $union = $union === null ? $select : $union->unionAll($select);
+        }
+
+        return EdomResponse::query()
+            ->fromSub($union, 'edom_response')
+            ->select('edom_response.*')
             ->orderBy('kode')
             ->orderBy('nama');
     }
