@@ -23,23 +23,6 @@ class EdomSettings extends Model
         'status',
     ];
 
-    protected static function booted(): void
-    {
-        static::saved(function (EdomSettings $setting): void {
-            if (! $setting->wasChanged('status')) {
-                return;
-            }
-
-            $setting->periods()->get()->each(function (EdomPeriod $period): void {
-                $status = self::periodStatus($period);
-
-                EdomPeriod::query()
-                    ->whereKey($period->id)
-                    ->update(['status' => $status]);
-            });
-        });
-    }
-
     public function getEdomNameAttribute(): ?string
     {
         return $this->attributes['name'] ?? null;
@@ -63,16 +46,6 @@ class EdomSettings extends Model
     public function prodis()
     {
         return $this->programStudis();
-    }
-
-    public function periods()
-    {
-        return $this->belongsToMany(
-            EdomPeriod::class,
-            'edom_period_edom_setting',
-            'edom_setting_id',
-            'edom_period_id',
-        )->withTimestamps();
     }
 
     public function categories()
@@ -129,22 +102,26 @@ class EdomSettings extends Model
         return $this->status === self::STATUS_CLOSED;
     }
 
-    private static function periodStatus(EdomPeriod $period): string
+    public function hasResponses(): bool
     {
-        $statuses = $period->settings()
-            ->pluck('edom_settings.status')
-            ->filter()
-            ->unique()
-            ->values();
+        return $this->responses()->exists();
+    }
 
-        if ($statuses->contains(self::STATUS_ACTIVE)) {
-            return self::STATUS_ACTIVE;
+    public function canModifyQuestionMaster(): bool
+    {
+        return $this->isDraft() && ! $this->hasResponses();
+    }
+
+    public function questionMasterLockLabel(): string
+    {
+        if ($this->hasResponses()) {
+            return 'Sudah ada response mahasiswa';
         }
 
-        if ($statuses->isNotEmpty() && $statuses->every(fn (string $status): bool => $status === self::STATUS_CLOSED)) {
-            return self::STATUS_CLOSED;
+        if (! $this->isDraft()) {
+            return 'Status Aktif atau Ditutup';
         }
 
-        return self::STATUS_DRAFT;
+        return 'Bisa diubah';
     }
 }
