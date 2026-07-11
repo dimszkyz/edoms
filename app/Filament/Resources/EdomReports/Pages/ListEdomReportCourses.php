@@ -3,9 +3,10 @@
 namespace App\Filament\Resources\EdomReports\Pages;
 
 use App\Filament\Resources\EdomReports\EdomReportResource;
-use App\Models\EdomKrsSection;
+use App\Models\EdomResponse;
 use App\Models\ProgramStudi;
-use App\Services\Edom\EdomKrsSectionSyncService;
+use App\Services\Edom\EdomCourseReportExporter;
+use App\Services\Edom\EdomKrsReportData;
 use Filament\Actions\Action;
 use Filament\Resources\Pages\Concerns\InteractsWithRecord;
 use Filament\Resources\Pages\Page;
@@ -14,6 +15,7 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ListEdomReportCourses extends Page implements HasTable
 {
@@ -27,7 +29,7 @@ class ListEdomReportCourses extends Page implements HasTable
     public function mount(int|string $record): void
     {
         $this->record = $this->resolveRecord($record);
-        app(EdomKrsSectionSyncService::class)->syncKnownStudentPeriods();
+        app(EdomKrsReportData::class)->refreshKnownResponseMetadata();
     }
 
     public function getTitle(): string
@@ -42,27 +44,12 @@ class ListEdomReportCourses extends Page implements HasTable
             ->columns([
                 TextColumn::make('nama')
                     ->label('Mata Kuliah')
-                    ->description(fn (EdomKrsSection $record): string => $record->course_label)
                     ->wrap(),
-                TextColumn::make('kode')
-                    ->label('Kode')
-                    ->badge()
-                    ->placeholder('-'),
-                TextColumn::make('idmatakuliah')
-                    ->label('ID Mata Kuliah')
-                    ->badge(),
-                TextColumn::make('idtawarmatakuliahdetail')
-                    ->label('ID Detail Penawaran')
-                    ->badge(),
-                TextColumn::make('krs_student_count')
-                    ->label('Mahasiswa KRS')
-                    ->badge()
-                    ->color('info'),
                 TextColumn::make('response_count')
                     ->label('Respons')
-                    ->state(fn (EdomKrsSection $record): int => EdomReportResource::responseCountForProgramStudiAndCourse(
+                    ->state(fn (EdomResponse $record): int => EdomReportResource::responseCountForProgramStudiAndCourse(
                         $this->record,
-                        EdomReportResource::courseKeyForKrsSection($record),
+                        EdomReportResource::courseKeyForCourseId($record->siakad_idmatakuliah),
                     ))
                     ->badge()
                     ->color('success'),
@@ -71,14 +58,22 @@ class ListEdomReportCourses extends Page implements HasTable
                 Action::make('report')
                     ->label('Lihat Report')
                     ->icon('heroicon-o-chart-bar-square')
-                    ->url(fn (EdomKrsSection $record): string => EdomReportResource::getUrl('course-report', [
+                    ->url(fn (EdomResponse $record): string => EdomReportResource::getUrl('course-report', [
                         'record' => $this->record,
-                        'courseKey' => EdomReportResource::courseKeyForKrsSection($record),
+                        'courseKey' => EdomReportResource::courseKeyForCourseId($record->siakad_idmatakuliah),
                     ])),
+                Action::make('exportExcel')
+                    ->label('Export Excel')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->color('success')
+                    ->action(fn (EdomResponse $record): StreamedResponse => app(EdomCourseReportExporter::class)->export(
+                        $this->record,
+                        EdomReportResource::courseKeyForCourseId($record->siakad_idmatakuliah),
+                    )),
             ])
-            ->recordUrl(fn (EdomKrsSection $record): string => EdomReportResource::getUrl('course-report', [
+            ->recordUrl(fn (EdomResponse $record): string => EdomReportResource::getUrl('course-report', [
                 'record' => $this->record,
-                'courseKey' => EdomReportResource::courseKeyForKrsSection($record),
+                'courseKey' => EdomReportResource::courseKeyForCourseId($record->siakad_idmatakuliah),
             ]))
             ->toolbarActions([]);
     }

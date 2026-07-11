@@ -3,27 +3,16 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use InvalidArgumentException;
+use Illuminate\Validation\ValidationException;
 use LogicException;
 
 class EdomPeriod extends Model
 {
-    public const STATUS_DRAFT = EdomSettings::STATUS_DRAFT;
-
-    public const STATUS_ACTIVE = EdomSettings::STATUS_ACTIVE;
-
-    public const STATUS_CLOSED = EdomSettings::STATUS_CLOSED;
-
     protected $table = 'edom_periods';
-
-    protected $attributes = [
-        'status' => self::STATUS_DRAFT,
-    ];
 
     protected $fillable = [
         'year',
         'siakad_idsemester',
-        'status',
         'is_open_in_siakad',
         'allows_response_updates',
     ];
@@ -35,6 +24,27 @@ class EdomPeriod extends Model
 
     protected static function booted(): void
     {
+        static::saving(function (EdomPeriod $period): void {
+            if ($period->year === null || $period->siakad_idsemester === null) {
+                return;
+            }
+
+            $periodExists = self::query()
+                ->where('year', (int) $period->year)
+                ->where('siakad_idsemester', (int) $period->siakad_idsemester)
+                ->when($period->exists, fn ($query) => $query->whereKeyNot($period->getKey()))
+                ->exists();
+
+            if (! $periodExists) {
+                return;
+            }
+
+            throw ValidationException::withMessages([
+                'year' => 'Kombinasi Tahun Ajaran dan Semester SIAKAD sudah ada. Pilih tahun ajaran atau semester lain.',
+                'siakad_idsemester' => 'Kombinasi Tahun Ajaran dan Semester SIAKAD sudah ada. Pilih tahun ajaran atau semester lain.',
+            ]);
+        });
+
         static::deleting(function (EdomPeriod $period): void {
             if ($period->responses()->exists()) {
                 throw new LogicException('Periode EDOM yang sudah memiliki respons tidak dapat dihapus.');
@@ -52,61 +62,6 @@ class EdomPeriod extends Model
         return (bool) $this->is_open_in_siakad;
     }
 
-    public function isDraft(): bool
-    {
-        return $this->status === self::STATUS_DRAFT;
-    }
-
-    public function isActive(): bool
-    {
-        return $this->status === self::STATUS_ACTIVE;
-    }
-
-    public function isClosed(): bool
-    {
-        return $this->status === self::STATUS_CLOSED;
-    }
-
-    public static function statusOptions(): array
-    {
-        return EdomSettings::statusOptions();
-    }
-
-    public function getStatusLabelAttribute(): string
-    {
-        return self::statusOptions()[$this->status] ?? ucfirst((string) $this->status);
-    }
-
-    public function getSettingsStatusSummaryAttribute(): array
-    {
-        return $this->settings
-            ->map(fn (EdomSettings $setting): string => $setting->name.' — '.$setting->status_label)
-            ->all();
-    }
-
-    public function updateSettingsStatus(string $status): int
-    {
-        if (! array_key_exists($status, self::statusOptions())) {
-            throw new InvalidArgumentException("Status EDOM Settings [{$status}] tidak valid.");
-        }
-
-        $this->update(['status' => $status]);
-
-        $settingIds = $this->settings()->pluck('edom_settings.id');
-
-        if ($settingIds->isEmpty()) {
-            return 0;
-        }
-
-        $updated = EdomSettings::query()
-            ->whereKey($settingIds)
-            ->update(['status' => $status]);
-
-        $this->load('settings');
-
-        return $updated;
-    }
-
     public function allowsResponseUpdates(): bool
     {
         return $this->isOpenInSiakad() && (bool) $this->allows_response_updates;
@@ -115,16 +70,6 @@ class EdomPeriod extends Model
     public function locksResponseUpdates(): bool
     {
         return ! $this->allowsResponseUpdates();
-    }
-
-    public function settings()
-    {
-        return $this->belongsToMany(
-            EdomSettings::class,
-            'edom_period_edom_setting',
-            'edom_period_id',
-            'edom_setting_id',
-        )->withTimestamps();
     }
 
     public function markAsOpenInSiakad(): void
